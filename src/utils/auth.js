@@ -28,8 +28,15 @@ export function makePermissionRouters(clientAsyncRoutes, serverRouter) {
   serverRouter.map(ele => {
     const newRooter = {
       path: ele.path || '',
-      component: ele.children.length === 0 ? routerMap['sys_admin_manager'] : routerMap['layoutStr'],
+      // component: ele.children.length === 0 ? routerMap['sys_admin_manager'] : routerMap['layoutStr'],
       // component: Layout,
+      component(resolve) {
+        if (ele.children.length === 0) {
+          require([`@/views${ele.path}`], resolve)
+        }else {
+          require(['../layout/index'], resolve)
+        }
+      },
       redirect: ele.redirect || '',
       name: ele.name,
       children: [],

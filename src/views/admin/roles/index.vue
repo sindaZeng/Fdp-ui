@@ -111,7 +111,6 @@ import { fetchList, delRole, createRole } from '@/api/role'
 import Pagination from '@/components/Pagination'
 import checkPermission from '@/utils/permission'
 import { deepClone } from '../../../utils'
-import { asyncRoutes } from '../../../router' // 权限判断函数
 
 export default {
   name: 'SysRole',
