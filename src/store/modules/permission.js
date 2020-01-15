@@ -1,4 +1,9 @@
 import { asyncRoutes, constantRoutes } from '@/router'
+import store from '@/store'
+import { deepClone } from '@/utils'
+import { makePermissionRouters } from '@/utils/auth'
+
+const clientRoutes = deepClone(asyncRoutes)
 
 /**
  * Use meta.role to determine if the current user has permission
@@ -47,14 +52,15 @@ const mutations = {
 }
 
 const actions = {
-  generateRoutes({ commit }, roles) {
+  async generateRoutes({ commit }) {
+    let PermissionRouters = await store.dispatch('user/getMenu').then(res => {
+      const data = res.data
+      PermissionRouters = makePermissionRouters(clientRoutes, data)
+      return PermissionRouters
+    })
     return new Promise(resolve => {
       let accessedRoutes
-      if (roles.includes('admin')) {
-        accessedRoutes = asyncRoutes || []
-      } else {
-        accessedRoutes = filterAsyncRoutes(asyncRoutes, roles)
-      }
+      accessedRoutes = PermissionRouters || []
       commit('SET_ROUTES', accessedRoutes)
       resolve(accessedRoutes)
     })

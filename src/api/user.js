@@ -23,7 +23,7 @@ export function getInfo() {
 
 export function logout() {
   return request({
-    url: '/vue-element-admin/user/logout',
+    url: 'FDP-auth/token/logout',
     method: 'post'
   })
 }

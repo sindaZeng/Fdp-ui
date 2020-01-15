@@ -58,6 +58,29 @@ export const constantRoutes = [
  * the routes that need to be dynamically loaded based on user roles
  */
 export const asyncRoutes = [
+  // {
+  //   path: '/user',
+  //   component: Layout,
+  //   redirect: '',
+  //   name: '权限管理',
+  //   meta: { title: '权限管理', icon: 'permissionmanager'},
+  //   children: [
+  //     {
+  //       path: 'index',
+  //       redirect: '',
+  //       component: () => import('@/views/admin/user/index'),
+  //       name: '用户管理',
+  //       meta: { title: '用户管理', icon: 'usermanager' }
+  //     },
+  //     {
+  //       path: '/views/admin/roles/index',
+  //       redirect: '',
+  //       component: () => import('@/views/admin/roles/index'),
+  //       name: '角色管理',
+  //       meta: { title: '角色管理', icon: 'role' }
+  //     }
+  //   ]
+  // },
   { path: '*', redirect: '/404', hidden: true }
 ]
 

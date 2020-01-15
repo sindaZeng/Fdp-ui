@@ -1,4 +1,5 @@
 import { login, logout, getInfo } from '@/api/user'
+import { getMenu } from '@/api/menu'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import router, { resetRouter } from '@/router'
 import { encryption } from '@/utils/encryption'
@@ -7,7 +8,6 @@ const state = {
   token: getToken(),
   name: '',
   avatar: '',
-  introduction: '',
   roles: []
 }
 
@@ -21,11 +21,11 @@ const mutations = {
   SET_EXPIRES_IN: (state, expires_in) => {
     state.expires_in = expires_in
   },
-  SET_INTRODUCTION: (state, introduction) => {
-    state.introduction = introduction
-  },
   SET_NAME: (state, name) => {
     state.name = name
+  },
+  SET_PERMISSION: (state, permissions) => {
+    state.permissions = permissions
   },
   SET_AVATAR: (state, avatar) => {
     state.avatar = avatar
@@ -36,8 +36,6 @@ const mutations = {
 }
 
 const actions = {
-
-  // user login
   login({ commit }, userInfo) {
     const user = encryption({
       data: userInfo,
@@ -57,36 +55,45 @@ const actions = {
       })
     })
   },
-
-  // get user info
-  getInfo({ commit, state }) {
+  getInfo({ commit }) {
     return new Promise((resolve, reject) => {
       getInfo().then(response => {
-        const { data } = response
-
+        const data = response.data.data || {}
         if (!data) {
-          reject('Verification failed, please Login again.')
+          reject('验证失败，请重新登录.')
         }
-
-        const { roles, name, avatar, introduction } = data
-
-        // roles must be a non-empty array
+        const { sysUser, roles, permissions } = data
+        const { username, avatar } = sysUser
         if (!roles || roles.length <= 0) {
-          reject('getInfo: roles must be a non-null array!')
+          reject('当前账号没有任何角色,请联系管理员!')
         }
-
         commit('SET_ROLES', roles)
-        commit('SET_NAME', name)
+        commit('SET_NAME', username)
         commit('SET_AVATAR', avatar)
-        commit('SET_INTRODUCTION', introduction)
+        commit('SET_PERMISSION', permissions)
         resolve(data)
       }).catch(error => {
         reject(error)
       })
     })
   },
-
-  // user logout
+  // 获取用户菜单
+  getMenu({ commit }) {
+    return new Promise((resolve, reject) => {
+      getMenu().then((response) => {
+        const data = response.data
+        if (!data) {
+          this.$message({
+            message: '菜单数据加载异常,请联系管理员',
+            type: 0
+          })
+        }
+        resolve(data)
+      }).catch(error => {
+        reject(error)
+      })
+    })
+  },
   logout({ commit, state, dispatch }) {
     return new Promise((resolve, reject) => {
       logout(state.token).then(() => {
@@ -94,19 +101,13 @@ const actions = {
         commit('SET_ROLES', [])
         removeToken()
         resetRouter()
-
-        // reset visited views and cached views
-        // to fixed https://github.com/PanJiaChen/vue-element-admin/issues/2485
         dispatch('tagsView/delAllViews', null, { root: true })
-
         resolve()
       }).catch(error => {
         reject(error)
       })
     })
   },
-
-  // remove token
   resetToken({ commit }) {
     return new Promise(resolve => {
       commit('SET_TOKEN', '')

@@ -21,7 +21,7 @@ module.exports = {
     open: false,
     overlay: {
       warnings: false,
-      errors: true
+      errors: false
     },
     proxy: {
       [process.env.VUE_APP_BASE_API]: {
