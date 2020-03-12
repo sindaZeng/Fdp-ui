@@ -23,39 +23,14 @@ export function createRole(data) {
   })
 }
 
-export function getRoutes() {
-  return request({
-    url: '/vue-element-admin/routes',
-    method: 'get'
-  })
-}
 
-export function getRoles() {
+export function updataRoleMenus(roleId, menuIdStr) {
   return request({
-    url: '/vue-element-admin/roles',
-    method: 'get'
-  })
-}
-
-export function addRole(data) {
-  return request({
-    url: '/vue-element-admin/role',
+    url: 'FDP-upmm-business/role/menus',
     method: 'post',
-    data
-  })
-}
-
-export function updateRole(id, data) {
-  return request({
-    url: `/vue-element-admin/role/${id}`,
-    method: 'put',
-    data
-  })
-}
-
-export function deleteRole(id) {
-  return request({
-    url: `/vue-element-admin/role/${id}`,
-    method: 'delete'
+    params: {
+      roleId: roleId,
+      menuIds: menuIdStr
+    }
   })
 }
