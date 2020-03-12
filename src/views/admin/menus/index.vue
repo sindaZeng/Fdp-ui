@@ -59,7 +59,7 @@
                      plain>
             查看
           </el-button>
-          <el-button size="mini" type="success" @click="updateMenus(row)" plain>
+          <el-button size="mini" type="success" @click="handleUpdate(row)" plain>
             编辑
           </el-button>
           <el-button v-if="checkPermission(['sys_delete_menu'])" size="mini" type="danger"
@@ -73,41 +73,44 @@
     <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" :before-close="cancel">
 
       <el-form ref="dataForm" :rules="rules" :model="temp" label-width="150px" :inline="true">
-        <el-form-item v-if="dialogStatus === 'update'" hidden>
-          <div slot="label" style="margin-left:10px;">ID:</div>
-          <el-input v-model="temp.id"/>
+        <el-form-item  label="菜单标识:">
+          <el-input v-model="temp.id" disabled="dialogStatus === 'check'" clearable/>
         </el-form-item>
 
-        <el-form-item label="名称:" prop="roleCode">
-          <el-input v-model="temp.name" :disabled="dialogStatus === 'update'" clearable/>
+        <el-form-item label="名称:">
+          <el-input v-model="temp.name" :disabled="dialogStatus === 'check'" clearable/>
         </el-form-item>
-        <el-form-item label="授权标识:" prop="roleName">
-          <el-input v-model="temp.permission" clearable/>
+        <el-form-item label="授权标识:" >
+          <el-input v-model="temp.permission" :disabled="dialogStatus === 'check' || temp.type === 0"
+                    content="Right Center 提示文字" placement="right"
+                    clearable/>
         </el-form-item>
-        <el-form-item label="排序:" prop="roleName">
-          <el-input v-model="temp.sort" clearable/>
+        <el-form-item label="排序:">
+          <el-input v-model="temp.sort" :disabled="dialogStatus === 'check'" clearable/>
         </el-form-item>
-        <el-form-item label="路由路径:" prop="roleName">
-          <el-input v-model="temp.path" clearable/>
+        <el-form-item label="路由路径:">
+          <el-input v-model="temp.path" :disabled="dialogStatus === 'check' || temp.type === 1" clearable/>
         </el-form-item>
         <el-form-item
           label="类型:">
-          <el-radio v-model="temp.type" :label="0" size="small" border>菜单</el-radio>
-          <el-radio v-model="temp.type" :label="1" size="small" border>按钮</el-radio>
+          <el-radio :disabled="dialogStatus === 'check'" v-model="temp.type" :label="0" size="small" border>菜单</el-radio>
+          <el-radio :disabled="dialogStatus === 'check'" v-model="temp.type" :label="1" size="small" border>按钮</el-radio>
         </el-form-item>
-        <el-form-item label="上级菜单:" prop="roleName" :hidden="dialogFormIsButton">
+        <el-form-item label="上级菜单:" :hidden="dialogFormIsButton">
           <el-cascader
+            :disabled="dialogStatus === 'check'"
             v-model="form.category"
-            :options="options"
+            :options="copyOptions"
             :props="{ checkStrictly: true }"
             clearable
           ></el-cascader>
         </el-form-item>
 
-        <el-form-item label="图标:" prop="roleName">
-          <el-button :style="{ display: buttonStust }" type="primary" @click="innerVisible = true">选择图片</el-button>
+        <el-form-item label="图标:">
+          <el-button v-if="temp.icon ==null && dialogStatus != 'check'" :style="{ display: buttonStust }" type="primary" @click="innerVisible = true">选择图片</el-button>
           <iconsView :createDialog="innerVisible" @cancelDialog="cancelDialog"/>
           <svg-icon :icon-class="iconName" class-name="disabled"/>
+          <svg-icon v-if="temp.icon !=null && dialogStatus === 'check'" :icon-class="temp.icon" class-name="disabled"/>
           <el-tooltip class="item" effect="dark" content="重新选择图片" placement="top-start">
           <span :style="{ display:deleteButtonStust}" class="delete" @click="deletePicture()">×
             </span></el-tooltip>
@@ -131,6 +134,7 @@
 import checkPermission from '@/utils/permission'
 import {getMenuTree} from '@/api/menu'
 import iconsView from '@/views/icons/index.vue'
+import { deepClone } from '@/utils/encryption'
 
 export default {
   components: {
@@ -155,9 +159,7 @@ export default {
         this.$notify.error('菜单数据加载异常,请联系管理员')
       }
       this.menuData = data.data;
-      data.data.map(v => {
-        this.filterButton(v)
-      })
+      this.options = deepClone(this.menuData)
       this.listLoading = false
     },
     filterButton(options, source) {
@@ -177,7 +179,6 @@ export default {
           if (options.children.length != 0) {
             menusOptionss.children = []
           }
-
           source = menusOptionss
         }
         if (options.children.length > 0) {
@@ -210,16 +211,16 @@ export default {
     },
     handleCheck(row) {
       this.temp = Object.assign({}, row) // copy obj
+      this.copyOptions = deepClone(this.options)
       this.dialogStatus = 'check'
-      this.form.category = []
-      if (row.type == 0) {
-        this.form.category.push(row.parentId)
-        if (row.parentId != 0) {
-          this.form.category.push(row.id)
-        }
-      } else {
-        this.dialogFormIsButton = true
-      }
+      // this.form.category = []
+      // if (row.parentId != 0) {
+      //   // 查一下 有没有父亲的父亲
+      //   this.getGrandFather(row.parentId, null, this.options)
+      // } else {
+      //   this.form.category.push(row.parentId)
+      // }
+      this.createMenusId(row)
       this.dialogFormVisible = true
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
@@ -227,12 +228,84 @@ export default {
     },
     handleUpdate(row) {
       this.temp = Object.assign({}, row) // copy obj
+      this.copyOptions = deepClone(this.options)
+      // 禁止选中自己的子级
+      this.banChildren(row.id,row.parentId,this.copyOptions,false)
       this.dialogStatus = 'update'
+      this.createMenusId(row)
       this.dialogFormVisible = true
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
       })
     },
+    banChildren(id,parentId,data,falg){
+      debugger
+      for (let dataKey in data) {
+        const menu = data[dataKey]
+        if (menu.id === id || menu.parentId === parentId){
+          this.$set(menu, 'disabled', true)
+          if (menu.children != null) {
+            this.banChildren(id, parentId, menu.children, true)
+          }
+        }
+        if (menu.type ===1 ){
+          this.$set(menu, 'disabled', true)
+        }
+        if (parentId === 0){
+          this.banChildren(id,parentId,menu.children,true)
+        }
+        if (falg){
+          this.$set(menu, 'disabled', true)
+        }
+        if (menu.children != null){
+          this.banChildren(id,parentId,menu.children,false)
+        }
+      }
+    },
+    createMenusId(row){
+      this.form.category = []
+      if (row.parentId != 0) {
+        // 查一下 有没有父亲的父亲
+        this.getGrandFather(row.parentId, null, this.options)
+      } else {
+        this.form.category.push(row.parentId)
+      }
+    },
+    getGrandFather(id, parentId, list) {
+      // 传进来的是 别的菜单的 父亲
+      for (let optionsKey in list) {
+        const menu = list[optionsKey]
+        if (parentId != null && parentId == menu.id) {
+          this.form.category.push(menu.id)
+        }
+        // 如果 没用爷爷菜单
+        if (menu.id === id) {
+          if (menu.parentId === 0) {
+            // 级联选择器 默认选中顺序 爷爷,父亲
+            // 当这就是顶级菜单了 直接添加
+            this.form.category.push(id)
+            if (parentId != null) {
+              this.form.category.push(parentId)
+            }
+          } else {
+            // 不是顶级菜单 还有菜单
+            this.getGrandFather(menu.parentId, id, this.options)
+          }
+        }
+        if (menu.children != null) {
+          this.getGrandFather(id, menu.id, menu.children)
+        }
+
+      }
+    },
+    // handleUpdate(row) {
+    //   this.temp = Object.assign({}, row) // copy obj
+    //   this.dialogStatus = 'update'
+    //   this.dialogFormVisible = true
+    //   this.$nextTick(() => {
+    //     this.$refs['dataForm'].clearValidate()
+    //   })
+    // },
     cancel() {
       this.dialogFormIsButton = false
       this.dialogFormVisible = false
@@ -265,12 +338,12 @@ export default {
   data() {
     return {
       form: {
+        // 级联选择器 默认选中顺序 爷爷,父亲
         category: []
       },
-      options: [{
-        value: 0,
-        label: '顶级菜单'
-      }],
+      options: [],
+      copyOptions:[],
+      menuData: [],
       temp: {
         id: undefined,
         label: '',
@@ -279,7 +352,8 @@ export default {
         path: '',
         sort: '',
         type: '0',
-        parentId: 0
+        parentId: 0,
+        icon: ''
       },
       radio1: '0',
       textMap: {
@@ -297,12 +371,13 @@ export default {
       innerVisible: false,
       iconName: '',
       buttonStust: '',
-      deleteButtonStust: 'none',
-      menuData: []
+      deleteButtonStust: 'none'
     }
   },
   created() {
-    this.getMenuTree()
+    this.getMenuTree().then(() => {
+      this.options.push({value: 0, label: '顶级菜单'})
+    })
   }
 }
 </script>

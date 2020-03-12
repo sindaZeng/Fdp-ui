@@ -24,11 +24,11 @@ export function makePermissionRouters(clientAsyncRoutes, serverRouter) {
     const newRooter = {
       path: ele.path || '',
       component(resolve) {
-        if (ele.children.length === 0) {
-          require([`@/views${ele.path}`], resolve)
-        }else {
-          require(['../layout/index'], resolve)
-        }
+          if (ele.children===null || ele.children.length === 0) {
+            require([`@/views${ele.path}`], resolve)
+          }else {
+            require(['../layout/index'], resolve)
+          }
       },
       redirect: ele.redirect || '',
       name: ele.name,
