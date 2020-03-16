@@ -1,11 +1,6 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <el-input v-model="listQuery.title" placeholder="名称" style="width: 200px;" class="filter-item"
-                @keyup.enter.native="searchMenu"/>
-      <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="searchMenu">
-        搜索
-      </el-button>
       <el-button v-if="checkPermission(['sys_add_menu'])" class="filter-item" style="margin-left: 10px;" type="primary"
                  icon="el-icon-edit" @click="handleCreate">
         新增
@@ -25,13 +20,13 @@
       </el-table-column>
 
       <el-table-column
-        label="图标">
+        label="图标" align="center">
         <template slot-scope="{row}">
           <svg-icon :icon-class="row.icon"/>
         </template>
       </el-table-column>
       <el-table-column
-        label="类型">
+        label="类型" align="center">
         <template slot-scope="{row}">
           <el-tag :type="row.type | statusFilter">
             {{ row.type==0 ?'菜单':'按钮' }}
@@ -40,20 +35,20 @@
       </el-table-column>
       <el-table-column
         prop="path"
-        label="路由路径">
+        label="路由路径" align="center">
       </el-table-column>
       <el-table-column
         prop="permission"
-        label="授权标识">
+        label="授权标识" align="center">
       </el-table-column>
       <el-table-column
         prop="sort"
         sortable
         width="100"
-        label="排序">
+        label="排序" align="center">
       </el-table-column>
       <el-table-column
-        label="操作">
+        label="操作" align="center">
         <template slot-scope="{row}">
           <el-button v-if="checkPermission(['sys_editor_menu'])" type="primary" size="mini" @click="handleCheck(row)"
                      plain>
@@ -62,9 +57,9 @@
           <el-button size="mini" type="success" @click="handleUpdate(row)" plain>
             编辑
           </el-button>
-          <el-button v-if="checkPermission(['sys_delete_menu'])" size="mini" type="danger"
-                     @click="deleteRole(row)" plain>
-            删除
+          <el-button v-if="checkPermission(['sys_delete_menu'])" size="mini" :type="row.delFlag | deleteFilter"
+                     @click="deleteMenus(row)" plain>
+            {{ row.delFlag==0 ?'启用':'禁用' }}
           </el-button>
         </template>
       </el-table-column>
@@ -72,31 +67,39 @@
 
     <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" :before-close="cancel">
 
-      <el-form ref="dataForm" :rules="rules" :model="temp" label-width="150px" :inline="true">
-        <el-form-item  label="菜单标识:">
+      <el-form ref="dataForm" :rules="menuRules" :model="temp" label-width="150px" :inline="true">
+        <el-form-item label="菜单标识:">
           <el-input v-model="temp.id" disabled="dialogStatus === 'check'" clearable/>
         </el-form-item>
 
-        <el-form-item label="名称:">
+        <el-form-item label="名称:" prop="name">
           <el-input v-model="temp.name" :disabled="dialogStatus === 'check'" clearable/>
         </el-form-item>
-        <el-form-item label="授权标识:" >
+        <el-form-item label="授权标识:" prop="permission">
           <el-input v-model="temp.permission" :disabled="dialogStatus === 'check' || temp.type === 0"
-                    content="Right Center 提示文字" placement="right"
                     clearable/>
         </el-form-item>
-        <el-form-item label="排序:">
-          <el-input v-model="temp.sort" :disabled="dialogStatus === 'check'" clearable/>
+        <el-form-item label="排序:" prop="sort">
+          <el-input v-model.number="temp.sort" :disabled="dialogStatus === 'check'" clearable/>
         </el-form-item>
-        <el-form-item label="路由路径:">
+        <el-form-item label="路由路径:" prop="path">
           <el-input v-model="temp.path" :disabled="dialogStatus === 'check' || temp.type === 1" clearable/>
         </el-form-item>
         <el-form-item
-          label="类型:">
-          <el-radio :disabled="dialogStatus === 'check'" v-model="temp.type" :label="0" size="small" border>菜单</el-radio>
-          <el-radio :disabled="dialogStatus === 'check'" v-model="temp.type" :label="1" size="small" border>按钮</el-radio>
+          label="类型:" prop="type">
+
+          <el-radio-group v-model="temp.type" @change="agreeChange">
+            <el-radio :disabled="dialogStatus === 'check' || hasChildren"
+                      :label="0" size="small"
+                      border>菜单
+            </el-radio>
+            <el-radio :disabled="dialogStatus === 'check' || hasChildren"
+                      :label="1" size="small"
+                      border>按钮
+            </el-radio>
+          </el-radio-group>
         </el-form-item>
-        <el-form-item label="上级菜单:" :hidden="dialogFormIsButton">
+        <el-form-item label="上级菜单:" :hidden="dialogFormIsButton" prop="category">
           <el-cascader
             :disabled="dialogStatus === 'check'"
             v-model="form.category"
@@ -106,23 +109,25 @@
           ></el-cascader>
         </el-form-item>
 
-        <el-form-item label="图标:">
-          <el-button v-if="temp.icon ==null && dialogStatus != 'check'" :style="{ display: buttonStust }" type="primary" @click="innerVisible = true">选择图片</el-button>
+        <el-form-item label="图标:" prop="icon">
+          <el-button
+            v-if="(temp.icon == null || temp.icon === '') && (dialogStatus === 'update'|| dialogStatus === 'create')"
+            :style="{ display: buttonStust }" type="primary" @click="innerVisible = true">选择图片
+          </el-button>
           <iconsView :createDialog="innerVisible" @cancelDialog="cancelDialog"/>
-          <svg-icon :icon-class="iconName" class-name="disabled"/>
-          <svg-icon v-if="temp.icon !=null && dialogStatus === 'check'" :icon-class="temp.icon" class-name="disabled"/>
+          <svg-icon v-if="temp.icon !=null || temp.icon != '' " :icon-class="temp.icon" class-name="disabled"/>
           <el-tooltip class="item" effect="dark" content="重新选择图片" placement="top-start">
-          <span :style="{ display:deleteButtonStust}" class="delete" @click="deletePicture()">×
-            </span></el-tooltip>
+            <span :style="{ display:deleteButtonStust}" class="delete" @click="deletePicture()">×</span>
+          </el-tooltip>
 
         </el-form-item>
       </el-form>
-      <div slot="footer" class="dialog-footer">
+      <div slot="footer" class="dialog-footer" v-if="dialogStatus === 'update'|| dialogStatus === 'create'">
         <el-button @click="cancel()">
           取消
         </el-button>
         <el-button type="primary"
-                   @click="dialogStatus==='create'?createRole():dialogStatus==='update'?updateData():updateRoleMenus()">
+                   @click="dialogStatus==='create'?createMenus():dialogStatus==='update'?updateData():updateRoleMenus()">
           确认
         </el-button>
       </div>
@@ -132,9 +137,9 @@
 
 <script>
 import checkPermission from '@/utils/permission'
-import {getMenuTree} from '@/api/menu'
+import {getMenuTree, addMenu, deleteMenu} from '@/api/menu'
 import iconsView from '@/views/icons/index.vue'
-import { deepClone } from '@/utils/encryption'
+import {deepClone} from '@/utils/encryption'
 
 export default {
   components: {
@@ -146,6 +151,13 @@ export default {
       const statusMap = {
         1: 'success',
         0: ''
+      }
+      return statusMap[status]
+    },
+    deleteFilter(status) {
+      const statusMap = {
+        1: 'danger',
+        0: 'success'
       }
       return statusMap[status]
     }
@@ -202,7 +214,8 @@ export default {
       return arr
     },
     handleCreate() {
-      this.resetTemp()
+      this.copyOptions = deepClone(this.options)
+      this.buttonStust = 'inline'
       this.dialogStatus = 'create'
       this.dialogFormVisible = true
       this.$nextTick(() => {
@@ -211,6 +224,7 @@ export default {
     },
     handleCheck(row) {
       this.temp = Object.assign({}, row) // copy obj
+      // this.iconName=row.icon
       this.copyOptions = deepClone(this.options)
       this.dialogStatus = 'check'
       // this.form.category = []
@@ -227,42 +241,66 @@ export default {
       })
     },
     handleUpdate(row) {
-      this.temp = Object.assign({}, row) // copy obj
-      this.copyOptions = deepClone(this.options)
-      // 禁止选中自己的子级
-      this.banChildren(row.id,row.parentId,this.copyOptions,false)
       this.dialogStatus = 'update'
+      this.temp = Object.assign({}, row) // copy obj
+      // this.iconName=row.icon
+      if (row.icon != null) {
+        this.deleteButtonStust = 'inline'
+      }
+      this.copyOptions = deepClone(this.options)
+      this.hasChildren = false
+      // 禁止选中自己的子级
+      this.banChildren(row.id, row.parentId, this.copyOptions, false)
+      // 如果有子级，不让选择菜单类型
+      this.checkHasChildren(row.id, this.options)
       this.createMenusId(row)
       this.dialogFormVisible = true
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
       })
     },
-    banChildren(id,parentId,data,falg){
-      debugger
+    checkHasChildren(sourceId, data) {
       for (let dataKey in data) {
         const menu = data[dataKey]
-        if (menu.id === id || menu.parentId === parentId){
+        if (menu.id === sourceId && menu.children != null) {
+          this.hasChildren = true
+        }
+        if (menu.children != null) {
+          this.checkHasChildren(sourceId, menu.children)
+        }
+      }
+    },
+    agreeChange(val) {
+      if (val === 0) {
+        this.temp.permission = ''
+      } else {
+        this.temp.path = ''
+      }
+    },
+    banChildren(id, parentId, data, falg) {
+      for (let dataKey in data) {
+        const menu = data[dataKey]
+        if (menu.id === id || menu.parentId === parentId) {
           this.$set(menu, 'disabled', true)
           if (menu.children != null) {
             this.banChildren(id, parentId, menu.children, true)
           }
         }
-        if (menu.type ===1 ){
+        if (menu.type === 1) {
           this.$set(menu, 'disabled', true)
         }
-        if (parentId === 0){
-          this.banChildren(id,parentId,menu.children,true)
+        if (parentId === 0) {
+          this.banChildren(id, parentId, menu.children, true)
         }
-        if (falg){
+        if (falg) {
           this.$set(menu, 'disabled', true)
         }
-        if (menu.children != null){
-          this.banChildren(id,parentId,menu.children,false)
+        if (menu.children != null) {
+          this.banChildren(id, parentId, menu.children, false)
         }
       }
     },
-    createMenusId(row){
+    createMenusId(row) {
       this.form.category = []
       if (row.parentId != 0) {
         // 查一下 有没有父亲的父亲
@@ -298,27 +336,22 @@ export default {
 
       }
     },
-    // handleUpdate(row) {
-    //   this.temp = Object.assign({}, row) // copy obj
-    //   this.dialogStatus = 'update'
-    //   this.dialogFormVisible = true
-    //   this.$nextTick(() => {
-    //     this.$refs['dataForm'].clearValidate()
-    //   })
-    // },
     cancel() {
+      this.resetTemp()
+      this.hasChildren = false,
+        this.deleteButtonStust = 'none'
       this.dialogFormIsButton = false
       this.dialogFormVisible = false
     },
     deletePicture() {
+      this.temp.icon = null
       this.deleteButtonStust = 'none'
       this.buttonStust = 'inline'
-      this.iconName = ''
     },
     cancelDialog(e, iconName) {
       this.buttonStust = 'inline'
       if (iconName != null) {
-        this.iconName = iconName
+        this.temp.icon = iconName
         this.buttonStust = 'none'
         this.deleteButtonStust = 'inline'
       }
@@ -326,25 +359,6 @@ export default {
     },
     resetTemp() {
       this.temp = {
-        id: undefined,
-        importance: 1,
-        remark: '',
-        title: '',
-        status: 'published',
-        type: ''
-      }
-    }
-  },
-  data() {
-    return {
-      form: {
-        // 级联选择器 默认选中顺序 爷爷,父亲
-        category: []
-      },
-      options: [],
-      copyOptions:[],
-      menuData: [],
-      temp: {
         id: undefined,
         label: '',
         name: '',
@@ -354,6 +368,87 @@ export default {
         type: '0',
         parentId: 0,
         icon: ''
+      }
+    },
+    createMenus() {
+      this.$refs['dataForm'].validate((valid) => {
+        if (valid) {
+          const parentId = this.form.category[this.form.category.length - 1]
+          this.temp.parentId = parentId
+          addMenu(this.temp).then(() => {
+            this.dialogFormVisible = false
+            this.getMenuTree()
+            this.resetTemp()
+            this.$notify({
+              title: 'Success',
+              message: '新增成功',
+              type: 'success',
+              duration: 2000
+            })
+          })
+        }
+      })
+    },
+    deleteMenus(row) {
+      debugger
+      let str = '禁用'
+      if (row.delFlag == 0) {
+        str = '启用'
+      }
+      this.$confirm('是否确认'+ str+'"'  + row.name + '"的数据项?', '警告', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(function () {
+        return deleteMenu(row.id)
+      }).then(() => {
+        this.getMenuTree()
+        this.$notify.success( str + '成功')
+      })
+    },
+  },
+  data() {
+    const isNum = (rule, value, callback) => {
+      if (!value) {
+        return callback(new Error('输入不可以为空'));
+      }
+      setTimeout(() => {
+        if (!Number(value)) {
+          callback(new Error('请输入正整数'));
+        } else {
+          const re = /^[0-9]*[1-9][0-9]*$/;
+          const rsCheck = re.test(value);
+          if (!rsCheck) {
+            callback(new Error('请输入正整数'));
+          } else {
+            callback();
+          }
+        }
+      }, 0);
+    }
+    return {
+      form: {
+        // 级联选择器 默认选中顺序 爷爷,父亲
+        category: []
+      },
+      options: [],
+      copyOptions: [],
+      menuData: [],
+      temp: {
+        id: undefined,
+        label: '',
+        name: '',
+        permission: '',
+        path: '',
+        sort: '',
+        type: '',
+        parentId: 0,
+        icon: ''
+      },
+      menuRules: {
+        sort: [{required: true, trigger: 'blur', validator: isNum}],
+        name: [{required: true, message: '菜单名称不能为空!', trigger: 'blur'}],
+        type: [{required: true, message: '菜单类型不能为空!', trigger: 'blur'}]
       },
       radio1: '0',
       textMap: {
@@ -366,10 +461,11 @@ export default {
         title: undefined
       },
       dialogStatus: '',
+      hasChildren: false,
       dialogFormVisible: false,
       dialogFormIsButton: false,
       innerVisible: false,
-      iconName: '',
+      // iconName: '',
       buttonStust: '',
       deleteButtonStust: 'none'
     }

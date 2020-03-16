@@ -30,13 +30,13 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="角色标识" min-width="150px">
+      <el-table-column label="角色标识" min-width="150px" align="center">
         <template slot-scope="{row}">
           {{ row.roleCode }}
         </template>
       </el-table-column>
 
-      <el-table-column label="角色名称" min-width="150px">
+      <el-table-column label="角色名称" min-width="150px" align="center">
         <template slot-scope="{row}">
           {{ row.roleName }}
         </template>
@@ -62,7 +62,8 @@
 
       <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <el-button v-if="checkPermission(['sys_editor_user'])" type="primary" size="mini" @click="handleUpdate(row)" plain>
+          <el-button v-if="checkPermission(['sys_editor_user'])" type="primary" size="mini" @click="handleUpdate(row)"
+                     plain>
             编辑
           </el-button>
           <el-button size="mini" type="success" @click="updateMenus(row)" plain>
@@ -324,8 +325,8 @@ export default {
       const menusStr = Object.values(this.getIdMapByTrees(Object.values(rootIdTree))).map(item => {
         return item.id
       })
-      const menusStr1 =menusStr.join(',')
-      updataRoleMenus(this.roleId,menusStr1).then(data => {
+      const menusStr1 = menusStr.join(',')
+      updataRoleMenus(this.roleId, menusStr1).then(data => {
         const roleMenuTreeRsp = data.data
         this.dialogFormVisible = false;
         //重新刷新路由
@@ -389,7 +390,7 @@ export default {
       })
     },
     deleteRole(row) {
-      this.$confirm('是否确认删除名称为"' + row.roleName + '"' + '"的数据项?', '警告', {
+      this.$confirm('是否确认删除名称为"' + row.roleName + '"的数据项?', '警告', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'

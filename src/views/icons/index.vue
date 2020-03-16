@@ -21,18 +21,13 @@
           </div>
         </el-tab-pane>
         <el-tab-pane label="七牛云">
-          <div class="grid">
+          <div class="grid" style="max-height: 300px;overflow: auto">
             <div v-for="item of elementIcons" :key="item"
-                 @click="handleClipboard(generateElementIconCode(item),$event)">
-              <el-tooltip placement="top">
-                <div slot="content">
-                  {{ generateElementIconCode(item) }}
-                </div>
+                 :class="checkIcon == item ? 'active':''" @click="activeIcon(item)" >
                 <div class="icon-item">
                   <i :class="'el-icon-' + item"/>
                   <span>{{ item }}</span>
                 </div>
-              </el-tooltip>
             </div>
           </div>
         </el-tab-pane>
