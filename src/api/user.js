@@ -49,3 +49,10 @@ export function deleteUser(userId) {
     method: 'delete'
   })
 }
+
+export function getUserById(userId) {
+  return request({
+    url: 'admin/user/'+userId,
+    method: 'post'
+  })
+}

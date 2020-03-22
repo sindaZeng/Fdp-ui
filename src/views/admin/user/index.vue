@@ -89,6 +89,7 @@
               type="info"
               icon="el-icon-upload2"
               size="mini"
+              @click="dialogUploadVisible = true"
             >导入
             </el-button>
           </el-col>
@@ -96,13 +97,14 @@
             <el-button
               type="warning"
               icon="el-icon-download"
+              @click="handleDownload"
               size="mini"
             >导出
             </el-button>
           </el-col>
         </el-row>
 
-        <el-table v-loading="listLoading" :data="roleList" >
+        <el-table v-loading="listLoading" :data="userList">
           <el-table-column label="用户编号" align="center" prop="userId" width="80" fixed/>
           <el-table-column label="用户名称" align="center" prop="username" width="80" :show-overflow-tooltip="true"/>
           <el-table-column label="用户头像" align="center" width="80">
@@ -114,7 +116,12 @@
               </el-image>
             </template>
           </el-table-column>
-          <el-table-column label="用户邮箱" align="center" prop="email" width="200"/>
+          <el-table-column label="用户性别" align="center" width="80">
+            <template slot-scope="{row}">
+              <span>{{ row.sex === 0 ? '女' : '男' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="用户邮箱" align="center" width="110" prop="email" :show-overflow-tooltip="true"/>
           <el-table-column label="用户手机" align="center" prop="phone" width="120"/>
           <el-table-column label="三方授权" align="center" width="150"/>
           <el-table-column label="创建时间" align="center" prop="createTime" width="200">
@@ -123,7 +130,7 @@
             </template>
           </el-table-column>
           <el-table-column
-            label="锁定"
+            label="锁定状态"
             align="center"
             width="90"
             v-if="checkPermission(['sys_ban_user'])">
@@ -192,7 +199,8 @@
               </el-col>
               <el-col :span="12">
                 <el-form-item
-                  label="用户名称：">{{ temp.username }}</el-form-item>
+                  label="用户名称：">{{ temp.username }}
+                </el-form-item>
                 <el-form-item label="用户性别：">
                   <div v-if="temp.sex === 1">男</div>
                   <div v-else-if="temp.sex === 0">女</div>
@@ -204,13 +212,13 @@
                 <el-form-item label="用户手机：">{{ temp.phone }}</el-form-item>
               </el-col>
               <el-col :span="24">
-                <el-form-item label="用户角色：" >
-                  <div  v-for="item in temp.roleName">{{ item }}</div>
+                <el-form-item label="用户角色：">
+                  <div v-for="item in temp.roleName">{{ item }}</div>
                 </el-form-item>
               </el-col>
               <el-col :span="24">
-                <el-form-item label="用户部门：" >
-                  <div  v-for="item in temp.deptName">{{ item }}</div>
+                <el-form-item label="用户部门：">
+                  <div v-for="item in temp.deptName">{{ item }}</div>
                 </el-form-item>
               </el-col>
               <el-col :span="24">
@@ -247,6 +255,35 @@
           </div>
         </el-dialog>
 
+        <!-- 用户导入对话框 -->
+        <el-dialog title="导入用户" :visible.sync="dialogUploadVisible" width="400px">
+          <el-upload
+            ref="upload"
+            drag
+            accept=".xlsx, .xls"
+            :auto-upload="false"
+            :limit="1"
+            :on-progress="uploadProgress"
+            :on-exceed="warningUpload"
+            :on-success="handleFileSuccess"
+            :disabled="isUploading"
+            :headers="headers"
+            :action="url+'?updateSupport=' + updateSupport"
+            :multiple=false>
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+            <div class="el-upload__tip" slot="tip">只能上传jpg/png文件，且不超过500kb</div>
+            <div class="el-upload__tip" slot="tip">
+              <el-checkbox v-model="updateSupport" />是否更新已经存在的用户
+              <el-link type="info" style="font-size:13px" @click="downloadTemplate(false)">下载模板</el-link>
+            </div>
+          </el-upload>
+
+          <div slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="submitFileForm">确 定</el-button>
+            <el-button @click="dialogUploadVisible = false">取 消</el-button>
+          </div>
+        </el-dialog>
       </el-col>
     </el-row>
   </div>
@@ -254,22 +291,30 @@
 
 <script>
 import pagination from '@/components/Pagination'
-import {userPage, lockUser, deleteUser} from '@/api/user'
+import {userPage, lockUser, deleteUser, getUserById} from '@/api/user'
 import {getDeptTree} from '@/api/dept'
+import {parseTime} from '@/utils'
 import checkPermission from '@/utils/permission'
+import UploadExcelComponent from '@/components/UploadExcel/index.vue'
+import { getToken } from '@/utils/auth'
 
 export default {
   name: 'UserList',
-  components: {pagination},
+  components: {pagination,UploadExcelComponent},
   data() {
     return {
       // 部门名称
       deptName: undefined,
       banOrOpen: [{label: '全部', key: 2}, {label: '禁用', key: 0}, {label: '启用', key: 1}],
-      roleList: [],
+      userList: [],
       listLoading: true,
       deptOptions: undefined,
       dialogFormVisible: false,
+      dialogUploadVisible: false,
+      isUploading: false,
+      updateSupport: false,
+      headers: { Authorization: "Bearer " + getToken() },
+      url: process.env.VUE_APP_BASE_API + "admin/user/import",
       deptIds: [],
       listQuery: {
         total: 0, // 总页数
@@ -292,8 +337,8 @@ export default {
         updateTime: undefined,
         lockFlag: 1,
         delFlag: 1,
-        roleName:[],
-        deptName:[]
+        roleName: [],
+        deptName: []
       },
       defaultProps: {
         children: "children",
@@ -321,7 +366,7 @@ export default {
         current: this.listQuery.currentPage,
         size: this.listQuery.pageSize
       }, this.listQuery)).then(response => {
-        this.roleList = response.data.data.records
+        this.userList = response.data.data.records
         this.listQuery.total = response.data.data.total
         this.listQuery.pageSize = response.data.data.size
         this.listLoading = false
@@ -350,18 +395,78 @@ export default {
       }
     },
     handleCheck(row) {
-      this.dialogFormVisible=true
-      this.temp = Object.assign({}, row) // copy obj
+      this.dialogFormVisible = true
+      getUserById(row.userId).then(response => {
+        this.temp = response.data.data
+      })
+      // this.temp = Object.assign({}, row) // copy obj
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
       })
     },
-    /** 搜索按钮操作 */
+    // 搜索
     handleQuery() {
       this.listQuery.currentPage = 1;
-      const aaaa = this.listQuery
-      debugger
       this.userPage();
+    },
+    // 导出
+    handleDownload() {
+      this.downloadTemplate(true)
+    },
+    // 文件上传成功处理
+    handleFileSuccess(response, file, fileList) {
+      this.dialogUploadVisible = false;
+      this.isUploading = false;
+      this.$refs.upload.clearFiles();
+      this.$alert("成功", "导入结果", { dangerouslyUseHTMLString: true });
+      this.userPage();
+    },
+    downloadTemplate(flag){
+      import('@/vendor/Export2Excel').then(excel => {
+        const tHeader = ['用户编号', '用户名称', '用户头像', '用户性别', '用户邮箱', '用户手机', '创建时间', '更新时间', '锁定状态', '注销状态']
+        const filterVal = ['userId', 'username', 'avatar', 'sex', 'email', 'phone', 'createTime', 'updateTime', 'lockFlag', 'delFlag']
+        let data = []
+        let text = '用户列表'
+        if (flag){
+          data = this.formatJson(filterVal, this.userList)
+        }else {
+          data = []
+          text = '用户列表模板'
+        }
+        excel.export_json_to_excel({
+          header: tHeader,
+          data,
+          filename: text
+        })
+      })
+    },
+    formatJson(filterVal, jsonData) {
+      return jsonData.map(v => filterVal.map(j => {
+        if (j === 'createTime' || j === 'updateTime') {
+          return parseTime(v[j])
+        } else if (j === 'sex'){
+          return v[j] === 1 ? '男' : '女'
+        } else if (j === 'lockFlag'){
+          return v[j] === 1 ? '正常' : '已锁定'
+        } else if (j === 'delFlag'){
+          return v[j] === 1 ? '正常' : '已注销'
+        }else{
+          return v[j]
+        }
+      }))
+    },
+    warningUpload(){
+      this.$message({
+        message: '警告，已经选中一个文件!',
+        type: 'warning'
+      });
+    },
+    uploadProgress(event, file, fileList) {
+      this.isUploading = true;
+    },
+    // 提交上传文件
+    submitFileForm() {
+      this.$refs.upload.submit();
     },
     deleteUser(row) {
       let text = row.delFlag === 1 ? "禁用" : "启用";
@@ -408,6 +513,7 @@ export default {
     /** 重置按钮操作 */
     resetListQuery() {
       this.reset();
+      this.userPage()
     },
   }
 }
