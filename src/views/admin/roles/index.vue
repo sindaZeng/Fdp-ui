@@ -8,8 +8,8 @@
       <!--        placeholder="请输入角色名称"-->
       <!--        @blur="handleSelect"-->
       <!--      ></el-autocomplete>-->
-      <el-button v-if="checkPermission(['sys_add_user'])" class="filter-item" style="margin-left: 10px;" type="primary"
-                 icon="el-icon-edit" @click="handleCreate">
+      <el-button v-if="checkPermission(['sys_add_role'])" class="filter-item" style="margin-left: 10px;" type="primary"
+                 icon="el-icon-plus" @click="handleCreate">
         新增
       </el-button>
     </div>
@@ -60,17 +60,30 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <el-button v-if="checkPermission(['sys_editor_user'])" type="primary" size="mini" @click="handleUpdate(row)"
-                     plain>
+          <el-button
+            v-if="checkPermission(['sys_editor_role'])"
+            type="text"
+            size="mini"
+            @click="handleUpdate(row)"
+            icon="el-icon-edit">
             编辑
           </el-button>
-          <el-button size="mini" type="success" @click="updateMenus(row)" plain>
+          <el-button
+            v-if="checkPermission(['sys_permission_role'])"
+            size="mini"
+            type="text"
+            @click="updateMenus(row)"
+            icon="el-icon-unlock">
             权限
           </el-button>
-          <el-button v-if="row.delFlag===1 && checkPermission(['sys_delete_user'])" size="mini" type="danger"
-                     @click="deleteRole(row)" plain>
+          <el-button
+            v-if="row.delFlag===1 && checkPermission(['sys_delete_role'])"
+            size="mini"
+            type="text"
+            @click="deleteRole(row)"
+            icon="el-icon-delete">
             删除
           </el-button>
         </template>
@@ -118,7 +131,7 @@
           取消
         </el-button>
         <el-button type="primary"
-                   @click="dialogStatus==='create'?createRole():dialogStatus==='update'?updateData():updateRoleMenus()">
+                   @click="dialogStatus==='create'?createRole():dialogStatus==='update'?updateRole():updateRoleMenus()">
           确认
         </el-button>
       </div>
@@ -127,7 +140,7 @@
 </template>
 
 <script>
-import {fetchList, delRole, createRole, updataRoleMenus} from '@/api/role'
+import {fetchList, delRole, createRole, updataRoleMenus, updateRole} from '@/api/role'
 import {getMenuTree, getRoleTree} from '@/api/menu'
 import Pagination from '@/components/Pagination'
 import checkPermission from '@/utils/permission'
@@ -221,7 +234,10 @@ export default {
       this.list = this.list.reverse()
     },
     handleUpdate(row) {
-      this.temp = Object.assign({}, row) // copy obj
+      this.temp.roleCode = row.roleCode
+      this.temp.roleDesc = row.roleDesc
+      this.temp.roleId = row.roleId
+      this.temp.roleName = row.roleName
       this.dialogStatus = 'update'
       this.dialogFormVisible = true
       this.$nextTick(() => {
@@ -353,16 +369,6 @@ export default {
       }
       return list;
     },
-    // querySearch(queryString, cb) {
-    //   var restaurants = this.serchlist;
-    //   var results = queryString ? restaurants.filter(this.createFilter(queryString)) : restaurants;
-    //   cb(results);
-    // },
-    // createFilter(queryString) {
-    //   return (restaurant) => {
-    //     return (restaurant.roleName.toLowerCase().indexOf(queryString.toLowerCase()) === 0);
-    //   };
-    // },
     getSortClass: function (key) {
       const sort = this.listQuery.sort
       return sort === `+${key}`
@@ -371,16 +377,6 @@ export default {
           ? 'descending'
           : ''
     },
-    // handleSelect(item) {
-    //   // TODO 按条件搜索
-    //   debugger
-    //   if (item){
-    //     this.list= deepClone(this.serchlist)
-    //   }else {
-    //     this.list = null
-    //     this.list.push(item)
-    //   }
-    // },
     handleCreate() {
       this.resetTemp()
       this.dialogStatus = 'create'
@@ -421,6 +417,22 @@ export default {
             this.$notify({
               title: 'Success',
               message: 'Created Successfully',
+              type: 'success',
+              duration: 2000
+            })
+          })
+        }
+      })
+    },
+    updateRole(){
+      this.$refs['dataForm'].validate((valid) => {
+        if (valid) {
+          updateRole(this.temp).then(() => {
+            this.dialogFormVisible = false
+            this.getList()
+            this.$notify({
+              title: 'Success',
+              message: '更新成功',
               type: 'success',
               duration: 2000
             })

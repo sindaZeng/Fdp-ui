@@ -21,9 +21,31 @@ export function getInfo() {
   })
 }
 
+export function userPage(data) {
+  return request({
+    url: 'admin/user/userPage',
+    method: 'get',
+    params: data
+  })
+}
+
 export function logout() {
   return request({
     url: 'FDP-auth/token/logout',
     method: 'post'
+  })
+}
+
+export function lockUser(userId) {
+  return request({
+    url: 'admin/user/'+userId,
+    method: 'get'
+  })
+}
+
+export function deleteUser(userId) {
+  return request({
+    url: 'admin/user/'+userId,
+    method: 'delete'
   })
 }

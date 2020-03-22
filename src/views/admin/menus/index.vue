@@ -2,7 +2,7 @@
   <div class="app-container">
     <div class="filter-container">
       <el-button v-if="checkPermission(['sys_add_menu'])" class="filter-item" style="margin-left: 10px;" type="primary"
-                 icon="el-icon-edit" @click="handleCreate">
+                 icon="el-icon-plus" @click="handleCreate">
         新增
       </el-button>
     </div>
@@ -16,13 +16,13 @@
 
       <el-table-column
         prop="name"
-        label="名称">
+        label="名称" width="150">
       </el-table-column>
 
       <el-table-column
         label="图标" align="center">
         <template slot-scope="{row}">
-          <svg-icon :icon-class="row.icon"/>
+          <svg-icon v-if="row.icon !=null && row.icon != '' " :icon-class="row.icon"/>
         </template>
       </el-table-column>
       <el-table-column
@@ -50,15 +50,28 @@
       <el-table-column
         label="操作" align="center">
         <template slot-scope="{row}">
-          <el-button v-if="checkPermission(['sys_editor_menu'])" type="primary" size="mini" @click="handleCheck(row)"
-                     plain>
+          <el-button
+            v-if="checkPermission(['sys_editor_menu'])"
+            size="mini"
+            type="text"
+            @click="handleCheck(row)"
+            icon="el-icon-search">
             查看
           </el-button>
-          <el-button size="mini" type="success" @click="handleUpdate(row)" plain>
+          <el-button
+            size="mini"
+            type="text"
+            v-if="checkPermission(['sys_editor_menu'])"
+            @click="handleUpdate(row)"
+            icon="el-icon-edit">
             编辑
           </el-button>
-          <el-button v-if="checkPermission(['sys_delete_menu'])" size="mini" :type="row.delFlag | deleteFilter"
-                     @click="deleteMenus(row)" plain>
+          <el-button
+            v-if="checkPermission(['sys_delete_menu'])"
+            size="mini"
+            type="text"
+            :icon="row.delFlag ===1 ? 'el-icon-delete': 'el-icon-success'"
+            @click="deleteMenus(row)">
             {{ row.delFlag==0 ?'启用':'禁用' }}
           </el-button>
         </template>
@@ -69,7 +82,7 @@
 
       <el-form ref="dataForm" :rules="menuRules" :model="temp" label-width="150px" :inline="true">
         <el-form-item label="菜单标识:">
-          <el-input v-model="temp.id" disabled="dialogStatus === 'check'" clearable/>
+          <el-input v-model="temp.id" disabled clearable/>
         </el-form-item>
 
         <el-form-item label="名称:" prop="name">
@@ -111,11 +124,11 @@
 
         <el-form-item label="图标:" prop="icon">
           <el-button
-            v-if="(temp.icon == null || temp.icon === '') && (dialogStatus === 'update'|| dialogStatus === 'create')"
+            v-if="(temp.icon == null || temp.icon === '') && (dialogStatus === 'update'|| dialogStatus === 'create' ) && flag"
             :style="{ display: buttonStust }" type="primary" @click="innerVisible = true">选择图片
           </el-button>
           <iconsView :createDialog="innerVisible" @cancelDialog="cancelDialog"/>
-          <svg-icon v-if="temp.icon !=null || temp.icon != '' " :icon-class="temp.icon" class-name="disabled"/>
+          <svg-icon v-if="temp.icon !=null && temp.icon != '' " :icon-class="temp.icon" class-name="disabled"/>
           <el-tooltip class="item" effect="dark" content="重新选择图片" placement="top-start">
             <span :style="{ display:deleteButtonStust}" class="delete" @click="deletePicture()">×</span>
           </el-tooltip>
@@ -127,7 +140,7 @@
           取消
         </el-button>
         <el-button type="primary"
-                   @click="dialogStatus==='create'?createMenus():dialogStatus==='update'?updateData():updateRoleMenus()">
+                   @click="dialogStatus==='create'?createMenus():updateMenus()">
           确认
         </el-button>
       </div>
@@ -137,7 +150,7 @@
 
 <script>
 import checkPermission from '@/utils/permission'
-import {getMenuTree, addMenu, deleteMenu} from '@/api/menu'
+import {getMenuTree, addMenu, deleteMenu, updateMenu} from '@/api/menu'
 import iconsView from '@/views/icons/index.vue'
 import {deepClone} from '@/utils/encryption'
 
@@ -173,6 +186,7 @@ export default {
       this.menuData = data.data;
       this.options = deepClone(this.menuData)
       this.listLoading = false
+      this.options.push({value: 0, label: '顶级菜单'})
     },
     filterButton(options, source) {
       const menusOptionss = {
@@ -208,11 +222,6 @@ export default {
         options.children = null
       }
     },
-    getParentId(dataPatent) {
-      let arr = []
-      arr.push(dataPatent)
-      return arr
-    },
     handleCreate() {
       this.copyOptions = deepClone(this.options)
       this.buttonStust = 'inline'
@@ -224,16 +233,8 @@ export default {
     },
     handleCheck(row) {
       this.temp = Object.assign({}, row) // copy obj
-      // this.iconName=row.icon
       this.copyOptions = deepClone(this.options)
       this.dialogStatus = 'check'
-      // this.form.category = []
-      // if (row.parentId != 0) {
-      //   // 查一下 有没有父亲的父亲
-      //   this.getGrandFather(row.parentId, null, this.options)
-      // } else {
-      //   this.form.category.push(row.parentId)
-      // }
       this.createMenusId(row)
       this.dialogFormVisible = true
       this.$nextTick(() => {
@@ -273,8 +274,11 @@ export default {
     agreeChange(val) {
       if (val === 0) {
         this.temp.permission = ''
+        this.flag=true
       } else {
         this.temp.path = ''
+        this.temp.icon = ''
+        this.flag=false
       }
     },
     banChildren(id, parentId, data, falg) {
@@ -369,6 +373,7 @@ export default {
         parentId: 0,
         icon: ''
       }
+      this.form.category = []
     },
     createMenus() {
       this.$refs['dataForm'].validate((valid) => {
@@ -389,13 +394,32 @@ export default {
         }
       })
     },
+    updateMenus() {
+      this.$refs['dataForm'].validate((valid) => {
+        if (valid) {
+          const parentId = this.form.category[this.form.category.length - 1]
+          this.temp.parentId = parentId
+          this.$set(this.temp, 'menuId', this.temp.id)
+          updateMenu(this.temp).then(() => {
+            this.dialogFormVisible = false
+            this.getMenuTree()
+            this.resetTemp()
+            this.$notify({
+              title: 'Success',
+              message: '更新成功',
+              type: 'success',
+              duration: 2000
+            })
+          })
+        }
+      })
+    },
     deleteMenus(row) {
-      debugger
       let str = '禁用'
       if (row.delFlag == 0) {
         str = '启用'
       }
-      this.$confirm('是否确认'+ str+'"'  + row.name + '"的数据项?', '警告', {
+      this.$confirm('是否确认' + str + '"' + row.name + '"的数据项?', '警告', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -403,7 +427,7 @@ export default {
         return deleteMenu(row.id)
       }).then(() => {
         this.getMenuTree()
-        this.$notify.success( str + '成功')
+        this.$notify.success(str + '成功')
       })
     },
   },
@@ -434,6 +458,7 @@ export default {
       options: [],
       copyOptions: [],
       menuData: [],
+      flag: true,
       temp: {
         id: undefined,
         label: '',
@@ -471,9 +496,7 @@ export default {
     }
   },
   created() {
-    this.getMenuTree().then(() => {
-      this.options.push({value: 0, label: '顶级菜单'})
-    })
+    this.getMenuTree()
   }
 }
 </script>

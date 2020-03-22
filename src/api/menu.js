@@ -16,7 +16,7 @@ export function getRoleTree(roleId) {
 
 export function addMenu(data) {
   return request({
-    url: 'admin/menu/',
+    url: 'admin/menu',
     method: 'post',
     data
   })
@@ -26,6 +26,14 @@ export function deleteMenu(Id) {
   return request({
     url: 'admin/menu/'+Id,
     method: 'delete',
+  })
+}
+
+export function updateMenu(data) {
+  return request({
+    url: 'admin/menu',
+    method: 'put',
+    data
   })
 }
 

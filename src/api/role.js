@@ -23,6 +23,14 @@ export function createRole(data) {
   })
 }
 
+export function updateRole(data) {
+  return request({
+    url: 'admin/role/',
+    method: 'put',
+    data
+  })
+}
+
 
 export function updataRoleMenus(roleId, menuIdStr) {
   return request({
