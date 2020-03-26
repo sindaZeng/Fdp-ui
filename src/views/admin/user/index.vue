@@ -266,6 +266,7 @@
             :on-progress="uploadProgress"
             :on-exceed="warningUpload"
             :on-success="handleFileSuccess"
+            :on-error="handleFileError"
             :disabled="isUploading"
             :headers="headers"
             :action="url+'?updateSupport=' + updateSupport"
@@ -274,7 +275,8 @@
             <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
             <div class="el-upload__tip" slot="tip">只能上传jpg/png文件，且不超过500kb</div>
             <div class="el-upload__tip" slot="tip">
-              <el-checkbox v-model="updateSupport" />是否更新已经存在的用户
+              <el-checkbox v-model="updateSupport"/>
+              是否更新已经存在的用户
               <el-link type="info" style="font-size:13px" @click="downloadTemplate(false)">下载模板</el-link>
             </div>
           </el-upload>
@@ -296,11 +298,11 @@ import {getDeptTree} from '@/api/dept'
 import {parseTime} from '@/utils'
 import checkPermission from '@/utils/permission'
 import UploadExcelComponent from '@/components/UploadExcel/index.vue'
-import { getToken } from '@/utils/auth'
+import {getToken} from '@/utils/auth'
 
 export default {
   name: 'UserList',
-  components: {pagination,UploadExcelComponent},
+  components: {pagination, UploadExcelComponent},
   data() {
     return {
       // 部门名称
@@ -313,7 +315,7 @@ export default {
       dialogUploadVisible: false,
       isUploading: false,
       updateSupport: false,
-      headers: { Authorization: "Bearer " + getToken() },
+      headers: {Authorization: "Bearer " + getToken()},
       url: process.env.VUE_APP_BASE_API + "admin/user/import",
       deptIds: [],
       listQuery: {
@@ -396,9 +398,9 @@ export default {
     },
     handleCheck(row) {
       this.dialogFormVisible = true
-      getUserById(row.userId).then(response => {
-        this.temp = response.data.data
-      })
+      // getUserById(row.userId).then(response => {
+        this.temp = row
+      // })
       // this.temp = Object.assign({}, row) // copy obj
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
@@ -418,18 +420,30 @@ export default {
       this.dialogUploadVisible = false;
       this.isUploading = false;
       this.$refs.upload.clearFiles();
-      this.$alert("成功", "导入结果", { dangerouslyUseHTMLString: true });
+      this.$alert(response.data, "导入结果", {dangerouslyUseHTMLString: true});
       this.userPage();
     },
-    downloadTemplate(flag){
+    handleFileError(err, file, fileList) {
+      var errStr = err.toString();
+      var msgIndex = errStr.indexOf("{");
+      var msgLastIndex = errStr.indexOf("}");
+      const errObj = JSON.parse(errStr.substr(msgIndex, msgLastIndex))
+      const errMsgStrObj = errObj.msg
+      this.dialogUploadVisible = false;
+      this.isUploading = false;
+      this.$refs.upload.clearFiles();
+      this.$alert(errMsgStrObj, "导入结果", {dangerouslyUseHTMLString: true});
+      this.userPage();
+    },
+    downloadTemplate(flag) {
       import('@/vendor/Export2Excel').then(excel => {
-        const tHeader = ['用户编号', '用户名称', '用户头像', '用户性别', '用户邮箱', '用户手机', '创建时间', '更新时间', '锁定状态', '注销状态']
-        const filterVal = ['userId', 'username', 'avatar', 'sex', 'email', 'phone', 'createTime', 'updateTime', 'lockFlag', 'delFlag']
+        const tHeader = ['用户编号', '用户名称', '用户头像', '用户性别', '用户角色', '用户部门', '用户邮箱', '用户手机', '创建时间', '更新时间', '锁定状态', '注销状态']
+        const filterVal = ['userId', 'username', 'avatar', 'sex', 'roleName', 'deptName', 'email', 'phone', 'createTime', 'updateTime', 'lockFlag', 'delFlag']
         let data = []
         let text = '用户列表'
-        if (flag){
+        if (flag) {
           data = this.formatJson(filterVal, this.userList)
-        }else {
+        } else {
           data = []
           text = '用户列表模板'
         }
@@ -444,18 +458,18 @@ export default {
       return jsonData.map(v => filterVal.map(j => {
         if (j === 'createTime' || j === 'updateTime') {
           return parseTime(v[j])
-        } else if (j === 'sex'){
+        } else if (j === 'sex') {
           return v[j] === 1 ? '男' : '女'
-        } else if (j === 'lockFlag'){
+        } else if (j === 'lockFlag') {
           return v[j] === 1 ? '正常' : '已锁定'
-        } else if (j === 'delFlag'){
+        } else if (j === 'delFlag') {
           return v[j] === 1 ? '正常' : '已注销'
-        }else{
+        } else {
           return v[j]
         }
       }))
     },
-    warningUpload(){
+    warningUpload() {
       this.$message({
         message: '警告，已经选中一个文件!',
         type: 'warning'

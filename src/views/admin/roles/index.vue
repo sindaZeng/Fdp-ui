@@ -1,13 +1,6 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <!--      <el-autocomplete-->
-      <!--        class="filter-item"-->
-      <!--        v-model="selectRoleName"-->
-      <!--        :fetch-suggestions="querySearch"-->
-      <!--        placeholder="请输入角色名称"-->
-      <!--        @blur="handleSelect"-->
-      <!--      ></el-autocomplete>-->
       <el-button v-if="checkPermission(['sys_add_role'])" class="filter-item" style="margin-left: 10px;" type="primary"
                  icon="el-icon-plus" @click="handleCreate">
         新增
@@ -290,65 +283,25 @@ export default {
     updateRoleMenus(roleId) {
       let treeIdMap = this.getIdMapByTrees(this.roleMenuData);
       let ids = Object.keys(this.roleMenuSelectionData);
+      let allIds = Object.keys(this.roleMenuSelectionData);
       // 以下  根据选中的菜单，补充根节点完整的树型结构
-      let rootIdTree = {}; // {rootId: tree}
       for (let i = 0; i < ids.length; i++) {
         // 当前选中节点
-        let set = {id: ids[i], parentId: treeIdMap[ids[i]].parentId};
-
-        while (set.parentId != 0) { // 补充当前选中节点到根节点 链表结构
-          set = {
-            id: set.parentId,
-            children: [set],
-            parentId: treeIdMap[set.parentId].parentId,
-          }
-        }
-        if (!rootIdTree[set.id]) { // 根节点不存在，直接加入
-          rootIdTree[set.id] = set;
-        } else if (set.children) { // 存在子节点，按树回填数据
-          let treeNode = rootIdTree[set.id];
-          while (true) {
-            if (!treeNode.children) { // 数据无子树
-              treeNode.children = set.children;
-              break;
-            } else if (!set.children[0].children) { // 提前一层判断是否到底，同层添加
-              // 查找是否已经拥有
-              let already = false;
-              for (let j = 0; j < treeNode.children.length; j++) {
-                if (set.children[0].id == treeNode.children[j].id) {
-                  already = true;
-                  break;
-                }
-              }
-              if (!already) { // children没有添加
-                treeNode.children.push(set.children[0]);
-              }
-              break;
-            } else { // 数据回填不在该层，进行剥层
-              set = set.children[0];
-              // 寻找对应层
-              for (let j = 0; j < treeNode.children.length; j++) {
-                if (set.id == treeNode.children[j].id) {
-                  treeNode = treeNode.children[j];
-                  break;
-                }
-              }
-            }
-          }
-        }
+        this.getCheckAllNode(allIds,treeIdMap[ids[i]].parentId,treeIdMap)
       }
-      // 根据选中的菜单，补充根节点完整的树型结构
-      const menusStr = Object.values(this.getIdMapByTrees(Object.values(rootIdTree))).map(item => {
-        return item.id
-      })
-      const menusStr1 = menusStr.join(',')
-      updataRoleMenus(this.roleId, menusStr1).then(data => {
+      updataRoleMenus(this.roleId, [...new Set(allIds)].join(',')).then(data => {
         const roleMenuTreeRsp = data.data
         this.dialogFormVisible = false;
         //重新刷新路由
         this.getList()
         this.$notify.success('修改成功')
       })
+    },
+    getCheckAllNode(ids,id,treeIdMap) {
+      if (id != 0) {
+        ids.push(id+'')  // 添加父节点
+        this.getCheckAllNode(ids,treeIdMap[id].parentId,treeIdMap)
+      }
     },
     // 展开树的结构,获取 [{id: Tree}] list 单层数据
     getIdMapByTrees(trees, map = {}) {
@@ -424,7 +377,7 @@ export default {
         }
       })
     },
-    updateRole(){
+    updateRole() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
           updateRole(this.temp).then(() => {

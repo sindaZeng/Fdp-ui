@@ -245,7 +245,7 @@ export default {
       this.dialogStatus = 'update'
       this.temp = Object.assign({}, row) // copy obj
       // this.iconName=row.icon
-      if (row.icon != null) {
+      if (row.icon != null && row.icon != '') {
         this.deleteButtonStust = 'inline'
       }
       this.copyOptions = deepClone(this.options)
@@ -354,7 +354,7 @@ export default {
     },
     cancelDialog(e, iconName) {
       this.buttonStust = 'inline'
-      if (iconName != null) {
+      if (iconName != null && iconName != '') {
         this.temp.icon = iconName
         this.buttonStust = 'none'
         this.deleteButtonStust = 'inline'
