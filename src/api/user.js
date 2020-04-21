@@ -39,7 +39,7 @@ export function logout() {
 export function lockUser(userId) {
   return request({
     url: 'admin/user/'+userId,
-    method: 'get'
+    method: 'post'
   })
 }
 
