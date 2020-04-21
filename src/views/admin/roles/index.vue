@@ -2,7 +2,7 @@
   <div class="app-container">
     <div class="filter-container">
       <el-button v-if="checkPermission(['sys_add_role'])" class="filter-item" style="margin-left: 10px;" type="primary"
-                 icon="el-icon-plus" @click="handleCreate">
+                 icon="el-icon-plus" @click="handleCreate" plain>
         新增
       </el-button>
     </div>
@@ -49,7 +49,7 @@
 
       <el-table-column label="修改时间" width="150px" align="center">
         <template slot-scope="{row}">
-          <span>{{ row.updateTime | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+          <span v-if="row.updateTime !=null && row.updateTime != ''">{{row.updateTime | parseTime('{y}-{m}-{d} {h}:{i}')}}</span>
         </template>
       </el-table-column>
 
@@ -60,7 +60,7 @@
             type="text"
             size="mini"
             @click="handleUpdate(row)"
-            icon="el-icon-edit">
+            icon="el-icon-edit" plain>
             编辑
           </el-button>
           <el-button
@@ -68,7 +68,7 @@
             size="mini"
             type="text"
             @click="updateMenus(row)"
-            icon="el-icon-unlock">
+            icon="el-icon-unlock" plain>
             权限
           </el-button>
           <el-button
@@ -76,7 +76,7 @@
             size="mini"
             type="text"
             @click="deleteRole(row)"
-            icon="el-icon-delete">
+            icon="el-icon-delete" plain>
             删除
           </el-button>
         </template>
@@ -120,11 +120,11 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">
+        <el-button @click="dialogFormVisible = false" plain>
           取消
         </el-button>
         <el-button type="primary"
-                   @click="dialogStatus==='create'?createRole():dialogStatus==='update'?updateRole():updateRoleMenus()">
+                   @click="dialogStatus==='create'?createRole():dialogStatus==='update'?updateRole():updateRoleMenus()" plain>
           确认
         </el-button>
       </div>
@@ -238,7 +238,7 @@ export default {
       })
     },
     updateMenus(row) {
-      this.temp = Object.assign({}, row) // copy obj
+      this.temp = Object.assign({}, row)
       getMenuTree().then(menus => {
         const allMenuTreeRsp = menus.data
         if (allMenuTreeRsp.code != 0) {
@@ -287,7 +287,7 @@ export default {
       // 以下  根据选中的菜单，补充根节点完整的树型结构
       for (let i = 0; i < ids.length; i++) {
         // 当前选中节点
-        this.getCheckAllNode(allIds,treeIdMap[ids[i]].parentId,treeIdMap)
+        this.getCheckAllNode(allIds, treeIdMap[ids[i]].parentId, treeIdMap)
       }
       updataRoleMenus(this.roleId, [...new Set(allIds)].join(',')).then(data => {
         const roleMenuTreeRsp = data.data
@@ -297,10 +297,10 @@ export default {
         this.$notify.success('修改成功')
       })
     },
-    getCheckAllNode(ids,id,treeIdMap) {
+    getCheckAllNode(ids, id, treeIdMap) {
       if (id != 0) {
-        ids.push(id+'')  // 添加父节点
-        this.getCheckAllNode(ids,treeIdMap[id].parentId,treeIdMap)
+        ids.push(id + '')  // 添加父节点
+        this.getCheckAllNode(ids, treeIdMap[id].parentId, treeIdMap)
       }
     },
     // 展开树的结构,获取 [{id: Tree}] list 单层数据

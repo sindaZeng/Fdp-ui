@@ -16,7 +16,7 @@ export function login(username, password) {
 
 export function getInfo() {
   return request({
-    url: 'FDP-upmm-business/user/info',
+    url: 'admin/user/info',
     method: 'get'
   })
 }

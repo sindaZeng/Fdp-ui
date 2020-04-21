@@ -2,6 +2,7 @@ import axios from 'axios'
 import { MessageBox, Message } from 'element-ui'
 import store from '@/store'
 import { getToken } from '@/utils/auth'
+import HttpCode from '@/const/HttpCode'
 
 const service = axios.create({
   baseURL: process.env.VUE_APP_BASE_API,
@@ -48,7 +49,7 @@ service.interceptors.response.use(
   },
   error => {
     Message({
-      message: error.response.data.msg || '请求失败,请联系管理员',
+      message: error.response.data.msg || HttpCode[error.response.status] || HttpCode['default'],
       type: 'error',
       duration: 5 * 1000
     })
