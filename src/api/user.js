@@ -3,7 +3,7 @@ import request from '@/utils/request'
 export function login(username, password) {
   const grant_type = 'password'
   return request({
-    url: 'admin/oauth/token',
+    url: 'FDP-auth/oauth/token',
     headers: {
       isToken: false,
       // 'Content-Type': 'application/x-www-form-urlencoded',
@@ -23,7 +23,7 @@ export function getInfo() {
 
 export function userPage(data) {
   return request({
-    url: 'admin/user/userPage',
+    url: 'admin/user/page',
     method: 'get',
     params: data
   })
