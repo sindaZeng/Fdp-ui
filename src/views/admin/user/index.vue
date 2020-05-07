@@ -424,7 +424,7 @@ export default {
       updateSupport: false,
       headers: {Authorization: "Bearer " + getToken()},
       url: process.env.VUE_APP_BASE_API + "admin/user/import",
-      avatarUrl: process.env.VUE_APP_BASE_API + "admin/file/upload",
+      avatarUrl: process.env.VUE_APP_BASE_API + "admin/file/upload/avatar",
       passwordType: 'password',
       capsTooltip: false,
       imageUrl: '',
