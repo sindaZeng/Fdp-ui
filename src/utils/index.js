@@ -14,9 +14,12 @@ export function parseTime(time, cFormat) {
   }
   const format = cFormat || '{y}-{m}-{d} {h}:{i}:{s}'
   let date
+  if (time === null){
+    return null
+  }
   if (typeof time === 'object') {
     date = time
-  } else {
+  } else{
     if ((typeof time === 'string') && (/^[0-9]+$/.test(time))) {
       time = parseInt(time)
     }

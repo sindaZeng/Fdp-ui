@@ -113,8 +113,7 @@
           <el-input v-model="temp.roleName" clearable/>
         </el-form-item>
 
-        <el-form-item v-if="dialogStatus === 'update' || dialogStatus === 'create'">
-          <div slot="label" style="margin-left:10px;">角色描述:</div>
+        <el-form-item label="角色描述:" v-if="dialogStatus === 'update' || dialogStatus === 'create'">
           <el-input v-model="temp.roleDesc" :autosize="{ minRows: 2, maxRows: 4}" type="textarea"
                     placeholder="Please input"/>
         </el-form-item>

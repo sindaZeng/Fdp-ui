@@ -360,20 +360,6 @@ export default {
       }
       this.innerVisible = e
     },
-    resetTemp() {
-      this.temp = {
-        id: undefined,
-        label: '',
-        name: '',
-        permission: '',
-        path: '',
-        sort: '',
-        type: '0',
-        parentId: 0,
-        icon: ''
-      }
-      this.form.category = []
-    },
     createMenus() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {

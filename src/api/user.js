@@ -3,7 +3,7 @@ import request from '@/utils/request'
 export function login(username, password) {
   const grant_type = 'password'
   return request({
-    url: 'FDP-auth/oauth/token',
+    url: 'auth/oauth/token',
     headers: {
       isToken: false,
       // 'Content-Type': 'application/x-www-form-urlencoded',
@@ -21,6 +21,14 @@ export function getInfo() {
   })
 }
 
+export function createUser(data) {
+  return request({
+    url: 'admin/user',
+    method: 'post',
+    data
+  })
+}
+
 export function userPage(data) {
   return request({
     url: 'admin/user/page',
@@ -31,7 +39,7 @@ export function userPage(data) {
 
 export function logout() {
   return request({
-    url: 'admin/token/logout',
+    url: 'auth/token/logout',
     method: 'post'
   })
 }
@@ -47,6 +55,14 @@ export function deleteUser(userId) {
   return request({
     url: 'admin/user/'+userId,
     method: 'delete'
+  })
+}
+
+export function updateUser(data) {
+  return request({
+    url: 'admin/user',
+    method: 'put',
+    data
   })
 }
 

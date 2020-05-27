@@ -5,15 +5,16 @@ import router, { resetRouter } from '@/router'
 import { encryption } from '@/utils/encryption'
 
 const state = {
-  token: getToken(),
+  access_token: getToken(),
   name: '',
   avatar: '',
-  roles: []
+  roles: [],
+  tenantId: ''
 }
 
 const mutations = {
-  SET_TOKEN: (state, token) => {
-    state.token = token
+  SET_TOKEN: (state, access_token) => {
+    state.access_token = access_token
   },
   SET_REFRESH_TOKEN: (state, rfToken) => {
     state.refresh_token = rfToken
@@ -32,6 +33,9 @@ const mutations = {
   },
   SET_ROLES: (state, roles) => {
     state.roles = roles
+  },
+  SET_TENANTID: (state, tenantId) => {
+    state.tenantId = tenantId
   }
 }
 
@@ -46,6 +50,8 @@ const actions = {
       login(user.username, user.password).then(response => {
         const { data } = response
         commit('SET_TOKEN', data.access_token)
+        // const aaaa=store.getters.access_token
+        // debugger
         commit('SET_REFRESH_TOKEN', data.refresh_token)
         commit('SET_EXPIRES_IN', data.expires_in)
         setToken(data.access_token)
@@ -96,7 +102,7 @@ const actions = {
   },
   logout({ commit, state, dispatch }) {
     return new Promise((resolve, reject) => {
-      logout(state.token).then(() => {
+      logout(state.access_token).then(() => {
         commit('SET_TOKEN', '')
         commit('SET_ROLES', [])
         removeToken()

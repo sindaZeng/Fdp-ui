@@ -91,6 +91,7 @@
               type="info"
               icon="el-icon-upload2"
               size="mini"
+              v-if="checkPermission(['sys_import_user'])"
               @click="dialogUploadVisible = true"
               plain
             >导入
@@ -100,6 +101,7 @@
             <el-button
               type="warning"
               icon="el-icon-download"
+              v-if="checkPermission(['sys_export_user'])"
               @click="handleDownload"
               size="mini"
               plain
@@ -167,7 +169,7 @@
                 size="mini"
                 icon="el-icon-edit"
                 v-if="checkPermission(['sys_editor_user'])"
-                @click="updateUser(scope.row)">编辑
+                @click="checkUser(scope.row)">编辑
               </el-button>
               <el-button
                 size="mini"
@@ -217,12 +219,12 @@
               </el-col>
               <el-col :span="24">
                 <el-form-item label="用户角色：">
-                  <div v-for="item in temp.roleName">{{ item }}</div>
+                  <div v-for="item in temp.roleVos">{{ item.roleName }}</div>
                 </el-form-item>
               </el-col>
               <el-col :span="24">
                 <el-form-item label="用户部门：">
-                  <div v-for="item in temp.deptName">{{ item }}</div>
+                  <div v-for="item in temp.deptVos">{{ item.deptName }}</div>
                 </el-form-item>
               </el-col>
               <el-col :span="24">
@@ -292,9 +294,9 @@
         </el-dialog>
 
 
-        <!-- 新增用户对话框 -->
-        <el-dialog title="新增用户" :visible.sync="dialogAddVisible">
-          <el-form ref="form" :model="temp" label-width="150px" :inline="true">
+        <!-- 新增 编辑用户对话框 -->
+        <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogAddVisible" :before-close="cancel">
+          <el-form ref="dataForm" :rules="rules" :model="temp" label-width="150px" :inline="true">
             <el-row>
               <el-col :span="24">
                 <el-form-item label="用户头像:">
@@ -310,23 +312,32 @@
                     <img v-if="temp.avatar" :src="imageUrl" class="avatar">
                     <i v-else class="el-icon-plus avatar-uploader-icon"></i>
                   </el-upload>
+                  <!--                  <el-image-->
+                  <!--                  v-if="dialogStatus=='create'"-->
+
+                  <!--                    v-else-->
+                  <!--                    style="width: 60px; height: 60px"-->
+                  <!--                    :src="temp.avatar"-->
+                  <!--                    :preview-src-list="[temp.avatar]">-->
+                  <!--                  </el-image>-->
+
                 </el-form-item>
               </el-col>
 
               <el-col :span="12">
-                <el-form-item label="用户名称:">
-                  <el-input class="add-input" v-model="temp.username"  clearable/>
+                <el-form-item label="用户名称:" prop="username">
+                  <el-input class="add-input" v-model="temp.username" clearable/>
                 </el-form-item>
-                <el-form-item label="用户邮箱:">
+                <el-form-item label="用户邮箱:" prop="email">
                   <el-input class="add-input" v-model="temp.email" clearable/>
                 </el-form-item>
               </el-col>
 
               <el-col :span="12">
-                <el-form-item label="用户手机:">
+                <el-form-item label="用户手机:" prop="phone">
                   <el-input class="add-input" v-model="temp.phone" clearable/>
                 </el-form-item>
-                <el-form-item label="用户性别:">
+                <el-form-item label="用户性别:" prop="sex">
                   <el-select class="add-input" v-model="temp.sex" placeholder="请选择">
                     <el-option
                       v-for="item in sexOptions"
@@ -363,7 +374,8 @@
                 <el-tooltip v-model="capsTooltip" content="大写已打开!" placement="right" manual>
                   <el-form-item label="用户密码:">
                     <el-button type="primary" icon="el-icon-edit" v-if="!editPassword" @click="editPassword = true"
-                               round>默认密码</el-button>
+                               round>{{ dialogStatus=='create'? '默认密码' : '修改密码' }}
+                    </el-button>
                     <el-input
                       class="add-input"
                       v-if="editPassword"
@@ -371,7 +383,7 @@
                       ref="password"
                       v-model="temp.password"
                       :type="passwordType"
-                      placeholder="不填则使用默认密码!"
+                      :placeholder="dialogStatus=='create'? '不填则使用默认密码' : '不填则不修改密码'"
                       name="password"
                       autocomplete="on"
                       @keyup.native="checkCapslock"
@@ -385,8 +397,8 @@
             </el-row>
           </el-form>
           <div slot="footer" class="dialog-footer">
-            <el-button type="primary">确 定</el-button>
-            <el-button @click="dialogAddVisible = false">取 消</el-button>
+            <el-button type="primary" @click="dialogStatus=='create' ? createUser() : updateUser()">确 定</el-button>
+            <el-button @click="cancel">取 消</el-button>
           </div>
         </el-dialog>
       </el-col>
@@ -396,19 +408,44 @@
 
 <script>
 import pagination from '@/components/Pagination'
-import {userPage, lockUser, deleteUser} from '@/api/user'
-import {getDeptTree} from '@/api/dept'
+import { headers,url,avatarUrl } from '@/common/common-constants'
+import {userPage, lockUser, deleteUser, createUser, updateUser} from '@/api/user'
+import {getDeptTree, getFullDeptTree} from '@/api/dept'
 import {rolesList} from '@/api/role'
 import {parseTime} from '@/utils'
 import checkPermission from '@/utils/permission'
 import UploadExcelComponent from '@/components/UploadExcel/index.vue'
-import {getToken} from '@/utils/auth'
 import {deepClone} from '@/utils/encryption'
 
 export default {
   name: 'UserList',
   components: {pagination, UploadExcelComponent},
   data() {
+    const validateEmail = (rule, value, callback) => {
+      if (value === '') {
+        callback(new Error('请填写邮箱!'));
+      } else {
+        if (value !== '') {
+          var reg = /^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/;
+          if (!reg.test(value)) {
+            callback(new Error('请输入有效的邮箱!'));
+          }
+        }
+        callback();
+      }
+    }
+    const validatePhone = (rule, value, callback) => {
+      const reg = /^((0\d{2,3}-\d{7,8})|(1[34578]\d{9}))$/;
+      if (value == '' || value == undefined || value == null) {
+        callback(new Error('请输入电话号码或者固话号码!'));
+      } else {
+        if ((!reg.test(value)) && value != '') {
+          callback(new Error('请输入正确的电话号码或者固话号码!'));
+        } else {
+          callback();
+        }
+      }
+    }
     return {
       // 部门名称
       deptName: undefined,
@@ -418,17 +455,28 @@ export default {
       deptOptions: undefined,
       dialogFormVisible: false,
       dialogUploadVisible: false,
+      dialogStatus: '',
       dialogAddVisible: false,
       editPassword: false,
       isUploading: false,
       updateSupport: false,
-      headers: {Authorization: "Bearer " + getToken()},
-      url: process.env.VUE_APP_BASE_API + "admin/user/import",
-      avatarUrl: process.env.VUE_APP_BASE_API + "admin/file/upload/avatar",
+      headers,
+      url,
+      avatarUrl,
       passwordType: 'password',
       capsTooltip: false,
       imageUrl: '',
       deptIds: [],
+      textMap: {
+        update: '编辑用户',
+        create: '新增用户'
+      },
+      rules: {
+        username: [{required: true, trigger: 'blur', message: '请输入用户名称!'}],
+        sex: [{required: true, trigger: 'blur', message: '性别不能为空!'}],
+        email: [{required: true, trigger: 'blur', validator: validateEmail}],
+        phone: [{required: true, trigger: 'blur', validator: validatePhone}]
+      },
       sexOptions: [{
         value: 0,
         label: '女'
@@ -463,8 +511,8 @@ export default {
         updateTime: undefined,
         lockFlag: 1,
         delFlag: 1,
-        roleName: [],
-        deptName: []
+        roleVos: [],
+        deptVos: []
       },
       defaultProps: {
         children: "children",
@@ -533,7 +581,22 @@ export default {
         this.$refs['dataForm'].clearValidate()
       })
     },
+    checkUser(row) {
+      this.dialogStatus = 'update'
+      this.dialogAddVisible = true
+      this.temp = row
+      this.imageUrl = row.avatar
+      // 补全部门树
+      getFullDeptTree(this.temp.deptVos).then(response => {
+        this.form.depts = response.data.data
+      })
+      this.form.roles = row.roleVos.map(item => item.roleId)
+      this.$nextTick(() => {
+        this.$refs['dataForm'].clearValidate()
+      })
+    },
     handleAdd() {
+      this.dialogStatus = 'create'
       this.dialogAddVisible = true
       this.resetTemp()
     },
@@ -551,9 +614,6 @@ export default {
         this.$message.error('上传头像图片大小不能超过 2MB!');
       }
       return isJPG && isLt2M;
-    },
-    errorHandler() {
-      return true
     },
     // 搜索
     handleQuery() {
@@ -663,6 +723,55 @@ export default {
         row.lockFlag = row.lockFlag === 0 ? 1 : 0;
       });
     },
+    createUser() {
+      this.validateDataForm()
+      createUser(this.temp).then(() => {
+        this.cancel()
+        this.userPage()
+        this.$notify({
+          title: 'Success',
+          message: '创建成功',
+          type: 'success',
+          duration: 2000
+        })
+      })
+    },
+    updateUser() {
+      this.validateDataForm()
+      updateUser(this.temp).then(() => {
+        this.cancel()
+        this.userPage()
+        this.$notify({
+          title: 'Success',
+          message: '修改成功',
+          type: 'success',
+          duration: 2000
+        })
+      })
+    },
+    validateDataForm() {
+      this.$refs['dataForm'].validate((valid) => {
+        if (valid) {
+          // 合并重复部门
+          if (this.form.depts.length != 0) {
+            let deptIds = []
+            this.form.depts.forEach((item) => {
+              deptIds.push(item[item.length - 1])
+            })
+            this.$set(this.temp, 'deptIds', deptIds)
+          }
+
+          if (this.form.roles.length != 0) {
+            // 合并重复角色
+            let rolesIds = []
+            for (let index of this.form.roles) {
+              rolesIds = rolesIds.concat(index)
+            }
+            this.$set(this.temp, 'roleIds', rolesIds)
+          }
+        }
+      })
+    },
     reset() {
       this.listQuery = {
         page: 1,
@@ -695,6 +804,14 @@ export default {
       this.reset();
       this.userPage()
     },
+    cancel() {
+      this.dialogAddVisible = false
+      this.form = {
+        roles: [],
+        depts: []
+      }
+      this.resetTemp()
+    },
     showPwd() {
       if (this.passwordType === 'password') {
         this.passwordType = ''
@@ -706,7 +823,7 @@ export default {
       })
     },
     checkCapslock(e) {
-      const { key } = e
+      const {key} = e
       this.capsTooltip = key && key.length === 1 && (key >= 'A' && key <= 'Z')
     }
   }
@@ -726,6 +843,7 @@ export default {
     line-height: 50px;
     text-align: center;
   }
+
   .show-pwd {
     position: absolute;
     right: 10px;
@@ -734,11 +852,13 @@ export default {
     cursor: pointer;
     user-select: none;
   }
+
   .avatar {
     width: 50px;
     height: 50px;
     display: block;
   }
+
   .add-input {
     width: 195px;
   }

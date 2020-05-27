@@ -6,3 +6,11 @@ export function getDeptTree() {
     method: 'get'
   })
 }
+
+export function getFullDeptTree(data) {
+  return request({
+    url: 'admin/dept/tree',
+    method: 'post',
+    data: data
+  })
+}

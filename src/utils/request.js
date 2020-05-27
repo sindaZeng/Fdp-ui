@@ -3,6 +3,8 @@ import { MessageBox, Message } from 'element-ui'
 import store from '@/store'
 import { getToken } from '@/utils/auth'
 import HttpCode from '@/const/HttpCode'
+import { getStorage } from '@/utils/Storage'
+
 
 const service = axios.create({
   baseURL: process.env.VUE_APP_BASE_API,
@@ -11,8 +13,12 @@ const service = axios.create({
 
 service.interceptors.request.use(
   config => {
-    if (store.getters.token) {
+    if (store.getters.access_token) {
       config.headers['Authorization'] = `Bearer ${getToken()}`
+    }
+    const tenantId = getStorage({ name: 'tenantId' })
+    if (tenantId){
+    config.headers['tenant_id'] = tenantId
     }
     return config
   },

@@ -1,5 +1,5 @@
 module.exports = {
-  title: '快速开发平台FDP',
+  title: '快速开发平台',
 
   /**
    * @type {boolean} true | false
