@@ -110,7 +110,7 @@
           </el-col>
         </el-row>
 
-        <el-table v-loading="listLoading" :data="userList">
+        <el-table v-loading="listLoading" :data="list">
           <el-table-column label="用户编号" align="center" prop="userId" width="80" fixed/>
           <el-table-column label="用户名称" align="center" prop="username" width="80" :show-overflow-tooltip="true"/>
           <el-table-column label="用户头像" align="center" width="80">
@@ -188,7 +188,7 @@
           :total="listQuery.total"
           :page.sync="listQuery.currentPage"
           :limit.sync="listQuery.pageSize"
-          @pagination="userPage"
+          @pagination="getList"
         />
 
         <!-- 用户详情 -->
@@ -312,14 +312,6 @@
                     <img v-if="temp.avatar" :src="imageUrl" class="avatar">
                     <i v-else class="el-icon-plus avatar-uploader-icon"></i>
                   </el-upload>
-                  <!--                  <el-image-->
-                  <!--                  v-if="dialogStatus=='create'"-->
-
-                  <!--                    v-else-->
-                  <!--                    style="width: 60px; height: 60px"-->
-                  <!--                    :src="temp.avatar"-->
-                  <!--                    :preview-src-list="[temp.avatar]">-->
-                  <!--                  </el-image>-->
 
                 </el-form-item>
               </el-col>
@@ -408,7 +400,8 @@
 
 <script>
 import pagination from '@/components/Pagination'
-import { headers,url,avatarUrl } from '@/common/common-constants'
+import UploadImg from '@/common/uploadImg'
+import tableParam from '@/common/tableParam'
 import {userPage, lockUser, deleteUser, createUser, updateUser} from '@/api/user'
 import {getDeptTree, getFullDeptTree} from '@/api/dept'
 import {rolesList} from '@/api/role'
@@ -419,6 +412,7 @@ import {deepClone} from '@/utils/encryption'
 
 export default {
   name: 'UserList',
+  mixins: [UploadImg,tableParam],
   components: {pagination, UploadExcelComponent},
   data() {
     const validateEmail = (rule, value, callback) => {
@@ -450,8 +444,7 @@ export default {
       // 部门名称
       deptName: undefined,
       banOrOpen: [{label: '全部', key: 2}, {label: '禁用', key: 0}, {label: '启用', key: 1}],
-      userList: [],
-      listLoading: true,
+      list: [],
       deptOptions: undefined,
       dialogFormVisible: false,
       dialogUploadVisible: false,
@@ -460,12 +453,8 @@ export default {
       editPassword: false,
       isUploading: false,
       updateSupport: false,
-      headers,
-      url,
-      avatarUrl,
       passwordType: 'password',
       capsTooltip: false,
-      imageUrl: '',
       deptIds: [],
       textMap: {
         update: '编辑用户',
@@ -527,13 +516,13 @@ export default {
     }
   },
   created() {
-    this.userPage()
+    this.getList()
     this.getDeptTree()
     this.rolesList()
   },
   methods: {
     checkPermission,
-    async userPage() {
+    async getList() {
       this.listLoading = true
       const deptIdsStr = this.deptIds.join(',')
       this.$set(this.listQuery, 'deptIds', deptIdsStr)
@@ -541,7 +530,7 @@ export default {
         current: this.listQuery.currentPage,
         size: this.listQuery.pageSize
       }, this.listQuery)).then(response => {
-        this.userList = response.data.data.records
+        this.list = response.data.data.records
         this.listQuery.total = response.data.data.total
         this.listQuery.pageSize = response.data.data.size
         this.listLoading = false
@@ -563,7 +552,7 @@ export default {
       // 包括自己节点 以及子节点
       this.deptIds.push(data.id)
       this.getDeptNodeId(this.deptIds, data.children)
-      this.userPage()
+      this.getList()
     },
     getDeptNodeId(nodeId, node) {
       for (let dataKey in node) {
@@ -600,25 +589,10 @@ export default {
       this.dialogAddVisible = true
       this.resetTemp()
     },
-    handleAvatarSuccess(res, file) {
-      this.imageUrl = URL.createObjectURL(file.raw);
-      this.temp.avatar = res.data;
-    },
-    beforeAvatarUpload(file) {
-      const isJPG = file.type === 'image/jpeg' || file.type === 'image/gif';
-      const isLt2M = file.size / 1024 / 1024 < 2;
-      if (!isJPG) {
-        this.$message.error('上传头像图片只能是 JPG/GIF 格式!');
-      }
-      if (!isLt2M) {
-        this.$message.error('上传头像图片大小不能超过 2MB!');
-      }
-      return isJPG && isLt2M;
-    },
     // 搜索
     handleQuery() {
       this.listQuery.currentPage = 1;
-      this.userPage();
+      this.getList();
     },
     // 导出
     handleDownload() {
@@ -630,19 +604,7 @@ export default {
       this.isUploading = false;
       this.$refs.upload.clearFiles();
       this.$alert(response.data, "导入结果", {dangerouslyUseHTMLString: true});
-      this.userPage();
-    },
-    handleFileError(err, file, fileList) {
-      var errStr = err.toString();
-      var msgIndex = errStr.indexOf("{");
-      var msgLastIndex = errStr.indexOf("}");
-      const errObj = JSON.parse(errStr.substr(msgIndex, msgLastIndex))
-      const errMsgStrObj = errObj.msg
-      this.dialogUploadVisible = false;
-      this.isUploading = false;
-      this.$refs.upload.clearFiles();
-      this.$alert(errMsgStrObj, "导入结果", {dangerouslyUseHTMLString: true});
-      this.userPage();
+      this.getList();
     },
     downloadTemplate(flag) {
       import('@/vendor/Export2Excel').then(excel => {
@@ -651,7 +613,7 @@ export default {
         let data = []
         let text = '用户列表'
         if (flag) {
-          data = this.formatJson(filterVal, this.userList)
+          data = this.formatJson(filterVal, this.list)
         } else {
           data = []
           text = '用户列表模板'
@@ -700,7 +662,7 @@ export default {
       }).then(function () {
         return deleteUser(row.userId)
       }).then(() => {
-        this.userPage()
+        this.getList()
         this.$notify.success(text + '成功')
       })
     },
@@ -727,7 +689,7 @@ export default {
       this.validateDataForm()
       createUser(this.temp).then(() => {
         this.cancel()
-        this.userPage()
+        this.getList()
         this.$notify({
           title: 'Success',
           message: '创建成功',
@@ -740,7 +702,7 @@ export default {
       this.validateDataForm()
       updateUser(this.temp).then(() => {
         this.cancel()
-        this.userPage()
+        this.getList()
         this.$notify({
           title: 'Success',
           message: '修改成功',
@@ -802,7 +764,7 @@ export default {
     /** 重置按钮操作 */
     resetListQuery() {
       this.reset();
-      this.userPage()
+      this.getList()
     },
     cancel() {
       this.dialogAddVisible = false
@@ -830,19 +792,8 @@ export default {
 }
 
 </script>
-<style scoped>
-  .avatar-uploader {
-    border-color: #409EFF;
-  }
-
-  .avatar-uploader-icon {
-    font-size: 28px;
-    color: #8c939d;
-    width: 50px;
-    height: 50px;
-    line-height: 50px;
-    text-align: center;
-  }
+<style lang="scss" scoped>
+  @import "@/styles/avatar.scss";
 
   .show-pwd {
     position: absolute;
@@ -851,12 +802,6 @@ export default {
     font-size: 16px;
     cursor: pointer;
     user-select: none;
-  }
-
-  .avatar {
-    width: 50px;
-    height: 50px;
-    display: block;
   }
 
   .add-input {

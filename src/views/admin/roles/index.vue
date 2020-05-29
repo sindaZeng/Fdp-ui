@@ -136,22 +136,17 @@ import {fetchList, delRole, createRole, updataRoleMenus, updateRole} from '@/api
 import {getMenuTree, getRoleTree} from '@/api/menu'
 import Pagination from '@/components/Pagination'
 import checkPermission from '@/utils/permission'
+import tableParam from '@/common/tableParam'
 
 export default {
   name: 'SysRole',
   components: {Pagination},
+  mixins: [tableParam],
   data() {
     return {
       list: null,
       roleId: undefined,
       selectRoleName: '',
-      listLoading: true,
-      listQuery: {
-        sort: '+id',
-        total: 0, // 总页数
-        currentPage: 1, // 当前页数
-        pageSize: 20 // 每页显示多少条
-      },
       rules: {
         roleName: [{required: true, message: '角色名称不能为空!', trigger: 'blur'}],
         roleCode: [{required: true, message: '角色标识不能为空!', trigger: 'blur'}]
@@ -201,29 +196,12 @@ export default {
       })
       this.listLoading = false
     },
-    sortChange(data) {
-      const {prop, order} = data
-      if (prop === 'id') {
-        this.sortByID(order)
-      }
-    },
-    sortByID(order) {
-      if (order === 'ascending') {
-        this.listQuery.sort = '+id'
-      } else {
-        this.listQuery.sort = '-id'
-      }
-      this.handleFilter()
-    },
     handleRoleMenuSelectionData(data, checked, indeterminate) {
       if (checked) {
         this.roleMenuSelectionData[data.id] = data;
       } else {
         delete this.roleMenuSelectionData[data.id]
       }
-    },
-    handleFilter() {
-      this.list = this.list.reverse()
     },
     handleUpdate(row) {
       this.temp.roleCode = row.roleCode
@@ -321,14 +299,6 @@ export default {
       }
       return list;
     },
-    getSortClass: function (key) {
-      const sort = this.listQuery.sort
-      return sort === `+${key}`
-        ? 'ascending'
-        : sort === `-${key}`
-          ? 'descending'
-          : ''
-    },
     handleCreate() {
       this.resetTemp()
       this.dialogStatus = 'create'
@@ -395,7 +365,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-</style>

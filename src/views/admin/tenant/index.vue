@@ -115,12 +115,16 @@
           <el-select
             style="width: 310px"
             v-model="temp.state"
-            placeholder="请选择活动区域">
-            <el-option label="区域一" value="shanghai"></el-option>
-            <el-option label="区域二" value="beijing"></el-option>
+            placeholder="请选择租户状态">
+            <el-option
+              v-for="(v, k) in options"
+              :key="v"
+              :label="v"
+              :value="k">
+            </el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="到期时间:" prop="state">
+        <el-form-item label="到期时间:" prop="expirationTime">
           <el-date-picker
             style="width: 310px"
             v-model="temp.expirationTime"
@@ -151,14 +155,17 @@
 
 <script>
 import {fetchList, createTenant, updateTenant, deleteTenant} from '@/api/tenant'
+import {get} from '@/api/enums'
 import Pagination from '@/components/Pagination'
 import checkPermission from '@/utils/permission'
-import { headers,url,avatarUrl } from '@/common/common-constants'
+import UploadImg from '@/common/uploadImg'
+import tableParam from '@/common/tableParam'
 
 
 export default {
   name: 'SysTenant',
   components: {Pagination},
+  mixins: [UploadImg,tableParam],
   filters: {
     statusFilter(status) {
       const statusMap = {
@@ -172,16 +179,11 @@ export default {
   },
   data() {
     return {
-      list: undefined,
-      listLoading: true,
-      headers,
-      url,
-      avatarUrl,
-      listQuery: {
-        sort: '+id',
-        total: 0, // 总页数
-        currentPage: 1, // 当前页数
-        pageSize: 20 // 每页显示多少条
+      options: [],
+      rules: {
+        name: [{required: true, message: '租户名称不能为空!', trigger: 'blur'}],
+        state: [{required: true, message: '租户状态不能为空!', trigger: 'blur'}],
+        expirationTime: [{required: true, message: '到期时间不能为空!', trigger: 'blur'}]
       },
       textMap: {
         update: '编辑',
@@ -202,6 +204,7 @@ export default {
   },
   created() {
     this.getList()
+    this.getEnum();
   },
   methods: {
     checkPermission,
@@ -216,31 +219,6 @@ export default {
       this.listQuery.pageSize = data.data.size
       this.listLoading = false
     },
-    sortChange(data) {
-      const {prop, order} = data
-      if (prop === 'id') {
-        this.sortByID(order)
-      }
-    },
-    sortByID(order) {
-      if (order === 'ascending') {
-        this.listQuery.sort = '+id'
-      } else {
-        this.listQuery.sort = '-id'
-      }
-      this.handleFilter()
-    },
-    handleFilter() {
-      this.list = this.list.reverse()
-    },
-    getSortClass: function (key) {
-      const sort = this.listQuery.sort
-      return sort === `+${key}`
-        ? 'ascending'
-        : sort === `-${key}`
-          ? 'descending'
-          : ''
-    },
     handleCreate() {
       this.dialogStatus = 'create'
       this.dialogFormVisible = true
@@ -250,13 +228,15 @@ export default {
     },
     handleUpdate(row) {
       this.temp = row
+      this.imageUrl = row.logo
       this.dialogFormVisible = true
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
       })
     },
     deleteTenant(row) {
-      this.$confirm('是否确认删除名称为"' + row.name + '"的数据项?', '警告', {
+      const text = row.delFlag === 0 ?'启用':'禁用'
+      this.$confirm('确认'+ text +'名称为"' + row.name + '"的数据项?', '警告', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -270,6 +250,8 @@ export default {
     createTenant() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
+          const  aaa =this.temp
+          debugger
           createTenant(this.temp).then(() => {
             this.dialogFormVisible = false
             this.getList()
@@ -281,6 +263,11 @@ export default {
             })
           })
         }
+      })
+    },
+    getEnum(){
+      get('TantentStateEnum').then(response =>{
+        this.options = response.data.data
       })
     },
     updateTenant() {
@@ -302,7 +289,6 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
+<style lang="scss" scoped>
+  @import "@/styles/avatar.scss";
 </style>

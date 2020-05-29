@@ -188,40 +188,6 @@ export default {
       this.listLoading = false
       this.options.push({value: 0, label: '顶级菜单'})
     },
-    // filterButton(options, source) {
-    //   const menusOptionss = {
-    //     value: '',
-    //     parentId: '',
-    //     children: null,
-    //     label: ''
-    //   }
-    //   if (options.type === 0) {
-    //     menusOptionss.value = options.id
-    //     menusOptionss.parentId = options.parentId
-    //     menusOptionss.label = options.label
-    //     if (source != null && source.children != null) {
-    //       source.children.push(menusOptionss)
-    //     } else {
-    //       if (options.children.length != 0) {
-    //         menusOptionss.children = []
-    //       }
-    //       source = menusOptionss
-    //     }
-    //     if (options.children.length > 0) {
-    //       for (let i = 0; i < options.children.length; i++) {
-    //         let dataKey = options.children[i];
-    //         this.filterButton(dataKey, source)
-    //         if (i === options.children.length - 1 && dataKey.type === 0) {
-    //           this.options.push(source)
-    //         }
-    //       }
-    //     } else {
-    //       this.options.push(source)
-    //     }
-    //   } else if (source != null && options.type === 1) {
-    //     options.children = null
-    //   }
-    // },
     handleCreate() {
       this.copyOptions = deepClone(this.options)
       this.buttonStust = 'inline'
