@@ -1,6 +1,11 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
+      <el-input v-model="search.name" placeholder="租户名称" style="width: 200px;" class="filter-item"
+                @keyup.enter.native="handleFilter"/>
+      <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter" plain>
+        搜索
+      </el-button>
       <el-button v-if="checkPermission(['sys_add_tenant'])" class="filter-item" style="margin-left: 10px;"
                  type="primary"
                  icon="el-icon-plus" @click="handleCreate" plain>
@@ -165,7 +170,7 @@ import tableParam from '@/common/tableParam'
 export default {
   name: 'SysTenant',
   components: {Pagination},
-  mixins: [UploadImg,tableParam],
+  mixins: [UploadImg, tableParam],
   filters: {
     statusFilter(status) {
       const statusMap = {
@@ -197,6 +202,9 @@ export default {
         logo: '',
         remake: ''
       },
+      search:{
+        name: undefined
+      },
       dialogStatus: '',
       dialogFormVisible: false,
       dialogPvVisible: false
@@ -213,7 +221,7 @@ export default {
       const {data} = await fetchList(Object.assign({
         current: this.listQuery.currentPage,
         size: this.listQuery.pageSize
-      }))
+      },this.search))
       this.list = data.data.records
       this.listQuery.total = data.data.total
       this.listQuery.pageSize = data.data.size
@@ -235,8 +243,8 @@ export default {
       })
     },
     deleteTenant(row) {
-      const text = row.delFlag === 0 ?'启用':'禁用'
-      this.$confirm('确认'+ text +'名称为"' + row.name + '"的数据项?', '警告', {
+      const text = row.delFlag === 0 ? '启用' : '禁用'
+      this.$confirm('确认' + text + '名称为"' + row.name + '"的数据项?', '警告', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -250,14 +258,11 @@ export default {
     createTenant() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
-          const  aaa =this.temp
-          debugger
           createTenant(this.temp).then(() => {
             this.dialogFormVisible = false
             this.getList()
             this.$notify({
-              title: 'Success',
-              message: 'Created Successfully',
+              title: '新增成功',
               type: 'success',
               duration: 2000
             })
@@ -265,10 +270,14 @@ export default {
         }
       })
     },
-    getEnum(){
-      get('TantentStateEnum').then(response =>{
+    getEnum() {
+      get('TantentStateEnum').then(response => {
         this.options = response.data.data
       })
+    },
+    handleFilter() {
+      this.listQuery.page = 1
+      this.getList()
     },
     updateTenant() {
       this.$refs['dataForm'].validate((valid) => {
@@ -277,8 +286,7 @@ export default {
             this.dialogFormVisible = false
             this.getList()
             this.$notify({
-              title: 'Success',
-              message: '更新成功',
+              title: '修改成功',
               type: 'success',
               duration: 2000
             })

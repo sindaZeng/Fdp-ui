@@ -1,5 +1,18 @@
 <template>
   <div class="app-container">
+    <div class="filter-container">
+      <el-input v-model="search.name" placeholder="参数名称" style="width: 200px;" class="filter-item"
+                @keyup.enter.native="handleFilter"/>
+      <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter" plain>
+        搜索
+      </el-button>
+      <el-button v-if="checkPermission(['sys_add_param'])" class="filter-item" style="margin-left: 10px;"
+                 type="primary"
+                 icon="el-icon-plus" @click="handleCreate" plain>
+        新增
+      </el-button>
+    </div>
+
     <el-table
       v-loading="listLoading"
       :data="list"
@@ -9,53 +22,49 @@
       style="width: 100%;"
       @sort-change="sortChange"
     >
-      <el-table-column label="租户id" prop="id" sortable="custom" align="center" width="100"
+      <el-table-column label="id" prop="id" sortable="custom" align="center" width="100"
                        :class-name="getSortClass('id')">
         <template slot-scope="{row}">
-          <span>{{ row.id }}</span>
+          {{ row.id }}
         </template>
       </el-table-column>
 
-      <el-table-column label="租户名称" min-width="150px" align="center">
+      <el-table-column label="参数名称" min-width="150px" align="center">
         <template slot-scope="{row}">
-          {{ row.name }}
+          {{ row.configName }}
         </template>
       </el-table-column>
 
-      <el-table-column label="logo" width="150px" align="center">
+      <el-table-column label="参数键名" width="150px" align="center">
         <template slot-scope="{row}">
-          <el-image
-            style="width: 60px; height: 60px"
-            :src="row.logo"
-            :preview-src-list="[row.avatar]">
-          </el-image>
+          {{ row.configKey }}
         </template>
       </el-table-column>
 
-      <el-table-column label="使用状态" min-width="80px" align="center">
+      <el-table-column label="参数键值" min-width="80px" align="center">
         <template slot-scope="{row}">
-          <el-tag :type="row.state | statusFilter">
-            {{ row.state === 0 ?'禁用': row.state === 1 ? '正常': row.state === 2 ? '待审核': '拒绝'}}
+          {{ row.configValue }}
+        </template>
+      </el-table-column>
+
+      <el-table-column label="参数类型" width="150px" align="center">
+        <template slot-scope="{row}">
+          <el-tag type="success">
+            {{ row.configType === 0 ?'系统参数':'业务参数'}}
           </el-tag>
         </template>
       </el-table-column>
 
-      <el-table-column label="有效期" width="150px" align="center">
+      <el-table-column label="备注" min-width="80px" align="center">
         <template slot-scope="{row}">
-          <span>{{ row.expirationTime | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
-        </template>
-      </el-table-column>
-
-      <el-table-column label="创建时间" width="150px" align="center">
-        <template slot-scope="{row}">
-          <span>{{row.createTime | parseTime('{y}-{m}-{d} {h}:{i}')}}</span>
+          {{ row.remark }}
         </template>
       </el-table-column>
 
       <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
           <el-button
-            v-if="checkPermission(['sys_editor_tenant'])"
+            v-if="checkPermission(['sys_editor_param'])"
             type="text"
             size="mini"
             @click="handleUpdate(row)"
@@ -63,7 +72,7 @@
             编辑
           </el-button>
           <el-button
-            v-if="checkPermission(['sys_delete_tenant'])"
+            v-if="checkPermission(['sys_delete_param'])"
             size="mini"
             type="text"
             @click="deleteTenant(row)"
@@ -81,8 +90,43 @@
 </template>
 
 <script>
+import tableParam from "@/common/tableParam"
+import Pagination from '@/components/Pagination'
+import checkPermission from '@/utils/permission'
+import {fetchList} from "@/api/param";
+
 export default {
-    name: "SysParam"
+  name: "SysParam",
+  mixins: [tableParam],
+  components: {Pagination},
+  data(){
+    return{
+      search:{
+        name: undefined
+      }
+    }
+  },
+  created() {
+    this.getList()
+  },
+  methods:{
+    checkPermission,
+    async getList() {
+      this.listLoading = true
+      const {data} = await fetchList(Object.assign({
+        current: this.listQuery.currentPage,
+        size: this.listQuery.pageSize
+      }))
+      this.list = data.data.records
+      this.listQuery.total = data.data.total
+      this.listQuery.pageSize = data.data.size
+      this.listLoading = false
+    },
+    handleFilter() {
+      this.listQuery.page = 1
+      this.getList()
+    },
+  }
 }
 </script>
 

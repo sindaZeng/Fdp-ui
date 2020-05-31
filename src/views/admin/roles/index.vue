@@ -123,7 +123,8 @@
           取消
         </el-button>
         <el-button type="primary"
-                   @click="dialogStatus==='create'?createRole():dialogStatus==='update'?updateRole():updateRoleMenus()" plain>
+                   @click="dialogStatus==='create'?createRole():dialogStatus==='update'?updateRole():updateRoleMenus()"
+                   plain>
           确认
         </el-button>
       </div>
@@ -216,7 +217,9 @@ export default {
     },
     updateMenus(row) {
       this.temp = Object.assign({}, row)
-      getMenuTree().then(menus => {
+      getMenuTree(Object.assign({
+        disabled: false
+      })).then(menus => {
         const allMenuTreeRsp = menus.data
         if (allMenuTreeRsp.code != 0) {
           this.$notify.error('菜单数据加载异常,请联系管理员')
@@ -337,8 +340,7 @@ export default {
             this.dialogFormVisible = false
             this.getList()
             this.$notify({
-              title: 'Success',
-              message: 'Created Successfully',
+              title: '新增成功',
               type: 'success',
               duration: 2000
             })
@@ -353,8 +355,7 @@ export default {
             this.dialogFormVisible = false
             this.getList()
             this.$notify({
-              title: 'Success',
-              message: '更新成功',
+              title: '修改成功',
               type: 'success',
               duration: 2000
             })

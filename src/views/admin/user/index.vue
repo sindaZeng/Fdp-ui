@@ -691,8 +691,7 @@ export default {
         this.cancel()
         this.getList()
         this.$notify({
-          title: 'Success',
-          message: '创建成功',
+          title: '新增成功',
           type: 'success',
           duration: 2000
         })
@@ -704,8 +703,7 @@ export default {
         this.cancel()
         this.getList()
         this.$notify({
-          title: 'Success',
-          message: '修改成功',
+          title: '修改成功',
           type: 'success',
           duration: 2000
         })

@@ -124,7 +124,7 @@
 
         <el-form-item label="图标:" prop="icon">
           <el-button
-            v-if="(temp.icon == null || temp.icon === '') && (dialogStatus === 'update'|| dialogStatus === 'create' ) && flag"
+            v-if="(temp.icon == null || temp.icon === '')  && flag"
             :style="{ display: buttonStust }" type="primary" @click="innerVisible = true">选择图片
           </el-button>
           <iconsView :createDialog="innerVisible" @cancelDialog="cancelDialog"/>
@@ -179,7 +179,9 @@ export default {
     checkPermission,
     async getMenuTree() {
       this.listLoading = true
-      const {data} = await getMenuTree()
+      const {data} = await getMenuTree(Object.assign({
+        disabled: true
+      }))
       if (data.code != 0) {
         this.$notify.error('菜单数据加载异常,请联系管理员')
       }
@@ -209,6 +211,9 @@ export default {
     },
     handleUpdate(row) {
       this.dialogStatus = 'update'
+      if (row.type === 1) {
+        this.flag = false
+      }
       this.temp = Object.assign({}, row)
       if (row.icon != null && row.icon != '') {
         this.deleteButtonStust = 'inline'
@@ -239,11 +244,11 @@ export default {
     agreeChange(val) {
       if (val === 0) {
         this.temp.permission = ''
-        this.flag=true
+        this.flag = true
       } else {
         this.temp.path = ''
         this.temp.icon = ''
-        this.flag=false
+        this.flag = false
       }
     },
     banChildren(id, parentId, data, falg) {
@@ -306,16 +311,30 @@ export default {
       }
     },
     cancel() {
-      this.resetTemp()
-      this.hasChildren = false,
-        this.deleteButtonStust = 'none'
+      this.hasChildren = false
+      this.deleteButtonStust = 'none'
       this.dialogFormIsButton = false
       this.dialogFormVisible = false
+      this.resetTemp()
     },
     deletePicture() {
       this.temp.icon = null
       this.deleteButtonStust = 'none'
       this.buttonStust = 'inline'
+    },
+    resetTemp() {
+      this.temp = {
+        id: undefined,
+        label: '',
+        name: '',
+        permission: '',
+        path: '',
+        sort: '',
+        type: '0',
+        parentId: 0,
+        icon: ''
+      }
+      this.form.category = []
     },
     cancelDialog(e, iconName) {
       this.buttonStust = 'inline'
@@ -336,8 +355,7 @@ export default {
             this.getMenuTree()
             this.resetTemp()
             this.$notify({
-              title: 'Success',
-              message: '新增成功',
+              title: '新增成功',
               type: 'success',
               duration: 2000
             })
@@ -356,8 +374,7 @@ export default {
             this.getMenuTree()
             this.resetTemp()
             this.$notify({
-              title: 'Success',
-              message: '更新成功',
+              title: '修改成功',
               type: 'success',
               duration: 2000
             })
