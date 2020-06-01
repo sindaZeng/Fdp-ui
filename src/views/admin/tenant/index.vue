@@ -94,7 +94,8 @@
       <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="90px"
                style="width: 400px; margin-left:50px;">
 
-        <el-form-item label="租户logo:">
+        <el-form-item >
+          <div slot="label" style="margin-left:10px;">租户logo:</div>
           <el-upload
             class="avatar-uploader"
             :auto-upload="true"
@@ -139,8 +140,9 @@
           </el-date-picker>
         </el-form-item>
 
-        <el-form-item label="租户描述:">
-          <el-input v-model="temp.remake" :autosize="{ minRows: 2, maxRows: 4}" type="textarea"
+        <el-form-item prop="remark">
+          <div slot="label" style="margin-left:10px;">租户描述:</div>
+          <el-input v-model="temp.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea"
                     placeholder="请输入..."/>
         </el-form-item>
       </el-form>
@@ -165,12 +167,15 @@ import Pagination from '@/components/Pagination'
 import checkPermission from '@/utils/permission'
 import UploadImg from '@/common/uploadImg'
 import tableParam from '@/common/tableParam'
-
+import waves from '@/directive/waves/index.js' // 水波纹指令
 
 export default {
   name: 'SysTenant',
   components: {Pagination},
   mixins: [UploadImg, tableParam],
+  directives: {
+    waves
+  },
   filters: {
     statusFilter(status) {
       const statusMap = {
@@ -200,9 +205,9 @@ export default {
         state: '',
         expirationTime: '',
         logo: '',
-        remake: ''
+        remark: ''
       },
-      search:{
+      search: {
         name: undefined
       },
       dialogStatus: '',
@@ -221,7 +226,7 @@ export default {
       const {data} = await fetchList(Object.assign({
         current: this.listQuery.currentPage,
         size: this.listQuery.pageSize
-      },this.search))
+      }, this.search))
       this.list = data.data.records
       this.listQuery.total = data.data.total
       this.listQuery.pageSize = data.data.size
@@ -252,7 +257,7 @@ export default {
         return deleteTenant(row.id)
       }).then(() => {
         this.getList()
-        this.$notify.success('删除成功')
+        this.$notify.success(text+'成功')
       })
     },
     createTenant() {

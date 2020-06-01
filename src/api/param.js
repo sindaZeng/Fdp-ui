@@ -7,3 +7,26 @@ export function fetchList(query) {
     params: query
   })
 }
+
+export function delParam(id) {
+  return request({
+    url: 'admin/param/' + id,
+    method: 'delete'
+  })
+}
+
+export function createParam(data) {
+  return request({
+    url: 'admin/param/save',
+    method: 'post',
+    data
+  })
+}
+
+export function updateParam(data) {
+  return request({
+    url: 'admin/param',
+    method: 'put',
+    data
+  })
+}
