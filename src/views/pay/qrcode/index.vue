@@ -40,7 +40,7 @@ export default {
   },
   created() {
     const tenantId = getStorage({ name: 'tenantId' })
-    this.msg = `${protocol}//${host}/FDP-pay-business/pay?tenant_id=`+tenantId
+    this.msg = `${protocol}//${host}/pay/route?tenant_id=`+tenantId
   }
 }
 </script>
