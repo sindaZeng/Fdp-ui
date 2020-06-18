@@ -117,48 +117,7 @@ export default {
           return false
         }
       })
-    },
-    handleTenant(value) {
-      setStorage({name: 'tenantId', content: value})
-    },
-    handleSend() {
-      if (!this.loginForm.mobile) {
-        return
-      } else if (this.msgKey || !reg.test(this.loginForm.mobile)) {
-        return
-      }
-      request({
-        url: '/admin/mobile/' + this.loginForm.mobile,
-        method: 'get'
-      }).then(response => {
-        if (response.data.data) {
-          this.$message.success('验证码发送成功')
-        } else {
-          this.$message.error(response.data.msg)
-        }
-      })
-      this.msgText = MSGSCUCCESS.replace('${time}', this.msgTime)
-      this.msgKey = true
-      const time = setInterval(() => {
-        this.msgTime--
-        this.msgText = MSGSCUCCESS.replace('${time}', this.msgTime)
-        if (this.msgTime === 0) {
-          this.msgTime = MSGTIME
-          this.msgText = MSGINIT
-          this.msgKey = false
-          clearInterval(time)
-        }
-      }, 1000)
-
-    },
-    getTenantList() {
-      request({
-        url: '/admin/tenant/list',
-        method: 'get'
-      }).then(response => {
-        this.tenantList = response.data.data
-      })
-    },
+    }
   }
 }
 </script>
@@ -209,47 +168,5 @@ export default {
 </style>
 
 <style lang="scss" scoped>
-  $bg: #fff; //背景颜色
-  $dark_gray: #889aa4;
-  $light_gray: #13a1de; //字体颜色
-
-  .login-form {
-    position: relative;
-    width: 520px;
-    max-width: 100%;
-    padding: 50px 35px 35px;
-    height: 250px;
-    margin: 0 auto;
-    overflow: hidden;
-  }
-
-  .tips {
-    font-size: 14px;
-    color: #fff;
-    margin-bottom: 10px;
-
-    span {
-      &:first-of-type {
-        margin-right: 16px;
-      }
-    }
-  }
-
-  .svg-container {
-    padding: 6px 5px 6px 15px;
-    color: $dark_gray;
-    vertical-align: middle;
-    width: 30px;
-    display: inline-block;
-  }
-
-  .show-pwd {
-    position: absolute;
-    right: 10px;
-    top: 7px;
-    font-size: 16px;
-    color: $dark_gray;
-    cursor: pointer;
-    user-select: none;
-  }
+  @import "~@/styles/login.scss";
 </style>

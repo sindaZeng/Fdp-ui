@@ -1,0 +1,43 @@
+$bg: #fff; //背景颜色
+$dark_gray: #889aa4;
+$light_gray: #13a1de; //字体颜色
+
+.login-form {
+  position: relative;
+  width: 520px;
+  max-width: 100%;
+  padding: 50px 35px 35px;
+  height: 250px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.tips {
+  font-size: 14px;
+  color: #fff;
+  margin-bottom: 10px;
+
+  span {
+    &:first-of-type {
+      margin-right: 16px;
+    }
+  }
+}
+
+.svg-container {
+  padding: 6px 5px 6px 15px;
+  color: $dark_gray;
+  vertical-align: middle;
+  width: 30px;
+  display: inline-block;
+}
+
+.show-pwd {
+  position: absolute;
+  right: 10px;
+  top: 7px;
+  font-size: 16px;
+  color: $dark_gray;
+  cursor: pointer;
+  user-select: none;
+}
