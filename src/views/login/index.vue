@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="form-container">
-      <div class="select-container">
+      <div class="head-conatiner">
         <h4 class="select-h4">
           <el-select v-model="tenant"
                      class="form-select"
@@ -14,97 +14,70 @@
           </el-select>
         </h4>
       </div>
-
-      <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form" autocomplete="on"
-               label-position="left">
-        <el-form-item prop="username">
-        <span class="svg-container">
-          <svg-icon icon-class="user"/>
-        </span>
-          <el-input
-            ref="username"
-            v-model="loginForm.username"
-            placeholder="用户名"
-            name="username"
-            type="text"
-            tabindex="1"
-            autocomplete="on"
-          />
-        </el-form-item>
-
-        <el-tooltip v-model="capsTooltip" content="大写已打开!" placement="right" manual>
-          <el-form-item prop="password">
-          <span class="svg-container">
-            <svg-icon icon-class="password"/>
-          </span>
-            <el-input
-              :key="passwordType"
-              ref="password"
-              v-model="loginForm.password"
-              :type="passwordType"
-              placeholder="密码"
-              name="password"
-              tabindex="2"
-              autocomplete="on"
-              @keyup.native="checkCapslock"
-              @blur="capsTooltip = false"
-              @keyup.enter.native="handleLogin"
-            />
-            <span class="show-pwd" @click="showPwd">
-            <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'"/>
-          </span>
-          </el-form-item>
-        </el-tooltip>
-
-        <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;"
-                   @click.native.prevent="handleLogin">登录
-        </el-button>
-      </el-form>
+      <div class="body-container">
+        <pwdLogin/>
+      </div>
+      <div class="footer-container">
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <div class="grid-content bg-purple" v-if="state =='form-login' || state ==''"
+                 style="font-size: 14px;cursor: pointer;"><span @click="handleLoginWay('mobile-login')">手机短信登录</span>
+            </div>
+            <div class="grid-content bg-purple" v-if="state == 'mobile-login'" style="font-size: 14px;cursor: pointer">
+              <span @click="handleLoginWay('form-login')">账号密码登录</span></div>
+          </el-col>
+          <el-col :span="6">
+            <div class="grid-content bg-purple"></div>
+          </el-col>
+        </el-row>
+      </div>
     </div>
     <div class="copyright-container">
-      Copyright © 2019 zsinda.com
+      Copyright © 2019 xhuicloud.com
     </div>
   </div>
 </template>
 
 <script>
+const MSGINIT = '发送验证码',
+  MSGSCUCCESS = '${time}秒后重发',
+  MSGTIME = 60
+const reg = /^1[3|4|5|7|8][0-9]\d{8}$/
 import request from '@/utils/request'
-import { setStorage } from '@/utils/Storage'
+import {setStorage} from '@/utils/Storage'
+import pwdLogin from './pwdlogin'
 
 export default {
   name: 'Login',
+  components: {
+    pwdLogin
+  },
   data() {
-    const validateUsername = (rule, value, callback) => {
-      if (!value || value.length === 0) {
-        callback(new Error('请输入正确的用户名'))
+    const validateCode = (rule, value, callback) => {
+      if (value.length != 6) {
+        callback(new Error('请输入6位数的验证码'))
       } else {
         callback()
       }
     }
-    const validatePassword = (rule, value, callback) => {
-      if (value.length < 6) {
-        callback(new Error('密码不能少于6位'))
-      } else if (value.length > 11) {
-        callback(new Error('密码不能超过11位'))
+    const validatePhone = (rule, value, callback) => {
+      if (!value) {
+        return callback(new Error('手机号不能为空'));
       } else {
-        callback()
+        if (reg.test(value)) {
+          callback();
+        } else {
+          return callback(new Error('请输入正确的手机号'));
+        }
       }
     }
     return {
+      msgText: MSGINIT,
+      msgTime: MSGTIME,
+      msgKey: false,
       tenant: '',
       tenantList: [],
-      loginForm: {
-        username: 'admin',
-        password: '123456'
-      },
-      loginRules: {
-        username: [{required: true, trigger: 'blur', validator: validateUsername}],
-        password: [{required: true, trigger: 'change', validator: validatePassword}]
-      },
-      passwordType: 'password',
-      capsTooltip: false,
-      loading: false,
-      showDialog: false,
+      state: '',
       redirect: undefined,
       otherQuery: {}
     }
@@ -124,48 +97,9 @@ export default {
   created() {
     this.getTenantList()
   },
-  mounted() {
-    if (this.loginForm.username === '') {
-      this.$refs.username.focus()
-    } else if (this.loginForm.password === '') {
-      this.$refs.password.focus()
-    }
-  },
   methods: {
-    checkCapslock(e) {
-      const {key} = e
-      this.capsTooltip = key && key.length === 1 && (key >= 'A' && key <= 'Z')
-    },
-    showPwd() {
-      if (this.passwordType === 'password') {
-        this.passwordType = ''
-      } else {
-        this.passwordType = 'password'
-      }
-      this.$nextTick(() => {
-        this.$refs.password.focus()
-      })
-    },
-    handleLogin() {
-      this.$refs.loginForm.validate(valid => {
-        if (valid) {
-          this.loading = true
-          this.$store.dispatch('user/login', this.loginForm)
-            .then(() => {
-              this.$router.push({path: this.redirect || '/', query: this.otherQuery})
-              this.loading = false
-            })
-            .catch(() => {
-              this.loading = false
-            })
-        } else {
-          console.log('error submit!!')
-          return false
-        }
-      })
-    },
     handleTenant(value) {
-      setStorage({ name: 'tenantId', content: value })
+      setStorage({name: 'tenantId', content: value})
     },
     getOtherQuery(query) {
       return Object.keys(query).reduce((acc, cur) => {
@@ -174,6 +108,9 @@ export default {
         }
         return acc
       }, {})
+    },
+    handleLoginWay(value) {
+      this.state = value
     },
     getTenantList() {
       request({
@@ -191,7 +128,6 @@ export default {
   /* 修复input 背景不协调 和光标变色 */
   /* Detail see https://github.com/PanJiaChen/vue-element-admin/pull/927 */
 
-  $bg: #283443;
   $light_gray: #0c0c0c; //输入框字体颜色
   $cursor: #fff;
 
@@ -201,10 +137,9 @@ export default {
     }
   }
 
-  /* reset element-ui css */
+  /* reset element-ui   css */
   .login-container {
     .el-input {
-      display: inline-block;
       height: 47px;
       width: 85%;
 
@@ -219,8 +154,8 @@ export default {
         caret-color: $cursor;
 
         &:-webkit-autofill {
-          box-shadow: 0 0 0px 1000px $bg inset !important;
-          -webkit-text-fill-color: $cursor !important;
+          box-shadow: 0 0 0px 1000px #E5E5E5 inset !important;
+          -webkit-text-fill-color: $light_gray !important;
         }
       }
     }
@@ -248,11 +183,19 @@ export default {
     box-shadow: 0 7px 25px rgba(0, 0, 0, 0.08);
     background-color: #fff;
     border-radius: 3px;
+  }
 
-    .select-container {
-      position: relative;
-    }
+  .head-conatiner {
+    text-align: center;
+    line-height: 40px;
+  }
 
+  .footer-container {
+    line-height: 50px;
+  }
+
+  .body-container {
+    line-height: 50px;
   }
 
   .form-select {
@@ -294,63 +237,12 @@ export default {
       }
     }
 
-    .login-form {
-      position: relative;
-      width: 520px;
-      max-width: 100%;
-      padding: 50px 35px 35px;
-      margin: 0 auto;
-      overflow: hidden;
-    }
-
-    .tips {
-      font-size: 14px;
-      color: #fff;
-      margin-bottom: 10px;
-
-      span {
-        &:first-of-type {
-          margin-right: 16px;
-        }
-      }
-    }
-
-    .svg-container {
-      padding: 6px 5px 6px 15px;
-      color: $dark_gray;
-      vertical-align: middle;
-      width: 30px;
-      display: inline-block;
-    }
-
     .copyright-container {
       color: #13a1de;
       width: 100%;
       position: fixed;
       bottom: 30px;
       text-align: center;
-    }
-
-    .show-pwd {
-      position: absolute;
-      right: 10px;
-      top: 7px;
-      font-size: 16px;
-      color: $dark_gray;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .thirdparty-button {
-      position: absolute;
-      right: 0;
-      bottom: 6px;
-    }
-
-    @media only screen and (max-width: 470px) {
-      .thirdparty-button {
-        display: none;
-      }
     }
   }
 </style>
