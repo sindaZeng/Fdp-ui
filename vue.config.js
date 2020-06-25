@@ -11,7 +11,8 @@ const name = defaultSettings.title
 const port = process.env.port || process.env.npm_config_port || 9527
 
 module.exports = {
-  publicPath: 'http://cdn.xcloud.com/',
+  // publicPath: 'http://cdn.xcloud.com/',
+  publicPath: '/',
   outputDir: 'dist',
   assetsDir: 'static',
   lintOnSave: process.env.NODE_ENV === 'development',

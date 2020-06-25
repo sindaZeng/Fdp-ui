@@ -21,7 +21,8 @@
         placeholder="验证码"
         autocomplete="off" @keyup.enter.native="handleLogin">
         <template slot="append">
-          <span :class="[{display:msgKey}]" class="msg-text" @click="handleSend">{{ msgText }}</span></template>
+          <span :class="[{display:msgKey}]" @click="handleSend" style="width: 100px">{{ msgText }}</span></template>
+<!--          <span @click="handleSend" class="msg-text" :class="[{display:msgKey}]">{{msgText}}</span>-->
       </el-input>
     </el-form-item>
 
@@ -95,8 +96,10 @@ export default {
     },
     handleSend() {
       if (!this.loginForm.mobile) {
-        return
+        this.$message.error('请输入手机号码')
+        return;
       } else if (this.msgKey || !reg.test(this.loginForm.mobile)) {
+        this.$message.error('请输入正确的手机号码')
         return
       }
       request({
