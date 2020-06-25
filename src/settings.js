@@ -1,5 +1,5 @@
 module.exports = {
-  title: '快速开发平台',
+  title: '星辉云',
 
   /**
    * @type {boolean} true | false

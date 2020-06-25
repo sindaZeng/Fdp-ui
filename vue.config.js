@@ -6,12 +6,12 @@ function resolve(dir) {
   return path.join(__dirname, dir)
 }
 
-const name = defaultSettings.title || '快速开发平台'
+const name = defaultSettings.title
 
 const port = process.env.port || process.env.npm_config_port || 9527
 
 module.exports = {
-  publicPath: '/',
+  publicPath: 'http://cdn.xcloud.com/',
   outputDir: 'dist',
   assetsDir: 'static',
   lintOnSave: process.env.NODE_ENV === 'development',

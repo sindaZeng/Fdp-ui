@@ -34,7 +34,7 @@
       </div>
     </div>
     <div class="copyright-container">
-      Copyright © 2019 xhuicloud.com
+      <a href="http://www.beian.miit.gov.cn/">Copyright © 2020-2021 粤ICP备19038132号</a>
     </div>
   </div>
 </template>
