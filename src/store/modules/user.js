@@ -1,5 +1,5 @@
 import {getInfo } from '@/api/user'
-import { login, logout, loginByMobile } from '@/api/login'
+import { login, logout, loginByMobile, loginBySocial } from '@/api/login'
 import { getMenu } from '@/api/menu'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import router, { resetRouter } from '@/router'
@@ -62,13 +62,27 @@ const actions = {
       })
     })
   },
+  // 根据OpenId登录
+  loginBySocial({commit}, param) {
+    return new Promise((resolve, reject) => {
+      loginBySocial(param.state, param.code).then(response => {
+        const { data } = response
+        commit('SET_TOKEN', data.access_token)
+        commit('SET_REFRESH_TOKEN', data.refresh_token)
+        commit('SET_EXPIRES_IN', data.expires_in)
+        setToken(data.access_token)
+        resolve()
+      }).catch(error => {
+        reject(error)
+      })
+    })
+  },
+
   loginByMobile({ commit }, userInfo) {
     return new Promise((resolve, reject) => {
       loginByMobile(userInfo.mobile, userInfo.code).then(response => {
         const { data } = response
         commit('SET_TOKEN', data.access_token)
-        // const aaaa=store.getters.access_token
-        // debugger
         commit('SET_REFRESH_TOKEN', data.refresh_token)
         commit('SET_EXPIRES_IN', data.expires_in)
         setToken(data.access_token)

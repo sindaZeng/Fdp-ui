@@ -23,13 +23,16 @@
           <span style="font-size: 12px;cursor: pointer" @click="handleLoginWay('form-login')">账号密码登录</span></div>
       </div>
       <p class="third-text">其他登录方式</p>
-        <div class="social-signup-container">
+      <div class="social-signup-container">
+        <a
+          href="http://192.168.1.101:9527/#/auth-redirect?code=376B659DA8888D6BDA00E1598B6F8562&state=xhuicloud-qq-login">
           <div class="sign-btn">
-            <span class="wx-svg-container"><svg-icon icon-class="wechat" class="icon" /></span>
+            <span class="wx-svg-container"><svg-icon icon-class="wechat" class="icon"/></span>
           </div>
-          <div class="sign-btn" @click="thirdHandleClick('tencent')">
-            <span class="qq-svg-container"><svg-icon icon-class="qq" class="icon" /></span>
-          </div>
+        </a>
+        <div class="sign-btn" @click="thirdHandleClick('tencent')">
+          <span class="qq-svg-container"><svg-icon icon-class="qq" class="icon"/></span>
+        </div>
       </div>
     </div>
     <div class="footer-container">
@@ -44,7 +47,8 @@ import request from '@/utils/request'
 import {setStorage} from '@/utils/Storage'
 import pwdLogin from './pwdlogin'
 import mobileLogin from './mobilelogin'
-import { util } from '@/utils/util'
+import {openWindows} from '@/utils/util'
+import {validatenull} from '@/utils/validate'
 
 export default {
   name: 'Login',
@@ -58,24 +62,43 @@ export default {
       tenantList: [],
       state: '',
       redirect: undefined,
-      otherQuery: {}
+      otherQuery: {},
+      socialForm: {}
     }
   },
   watch: {
     $route: {
       handler: function (route) {
-        debugger
         const query = route.query
         if (query) {
-          this.redirect = query.redirect
-          this.otherQuery = this.getOtherQuery(query)
+          if (!validatenull(query.redirect)) {
+            this.redirect = query.redirect
+            this.otherQuery = this.getOtherQuery(query)
+          } else if (!validatenull(query.state) && !validatenull(query.code)) {
+            this.socialForm.state = query.state
+            this.socialForm.code = query.code
+
+            const loading = this.$loading({
+              lock: true,
+              text: `登录中,请稍后...`,
+              spinner: 'el-icon-loading'
+            })
+            this.$store.dispatch('user/loginBySocial', this.socialForm)
+              .then(() => {
+                this.$router.push({path: this.redirect || '/'})
+                loading.close()
+              })
+              .catch(() => {
+                loading.close()
+              })
+          }
         }
       },
       immediate: true
     }
   },
   created() {
-    // this.getTenantList()
+    this.getTenantList()
   },
   methods: {
     handleTenant(value) {
@@ -107,7 +130,7 @@ export default {
         const client_id = '101887822'
         url = `https://graph.qq.com/oauth2.0/authorize?response_type=code&state=xhuicloud-qq-login&client_id=${client_id}&redirect_uri=${redirect_uri}`
       }
-      util(url, way, 540, 540)
+      openWindows(url, way, 540, 540)
     }
   }
 }
@@ -182,15 +205,18 @@ export default {
   .social-signup-container {
     margin: 20px 0;
     text-align: center;
+
     .sign-btn {
       display: inline-block;
       cursor: pointer;
     }
+
     .icon {
       color: #fff;
       font-size: 24px;
       margin-top: 8px;
     }
+
     .wx-svg-container,
     .qq-svg-container {
       display: inline-block;
@@ -203,9 +229,11 @@ export default {
       margin-bottom: 20px;
       margin-right: 5px;
     }
+
     .wx-svg-container {
       background-color: #24da70;
     }
+
     .qq-svg-container {
       background-color: #6BA2D6;
       margin-left: 50px;

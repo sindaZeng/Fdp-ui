@@ -7,12 +7,12 @@ export default {
     const url = window.location.href
     const code = getQueryString(url, 'code')
     let state = getQueryString(url, 'state')
-    debugger
-    if (!!state) {
+    if (state) {
       const type = state.split('-')[1]
       state = state.split('-')[2]
       if (state === 'login'){
-        const url = `${window.location.origin}/#/login?state=${state}&code=${code}&time=` + new Date().getTime()
+        const url = `${window.location.origin}/#/login?state=${type}&code=${code}&time=` + new Date().getTime()
+        console.log(url)
         window.opener.location.href = url
         window.close()
       }

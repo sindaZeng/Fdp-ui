@@ -31,3 +31,14 @@ export function loginByMobile(mobile, code) {
     params: { auth_code: 'SMS@' + mobile, code }
   })
 }
+
+export function loginBySocial(state, code) {
+  return request({
+    url: 'auth/token/social',
+    headers: {
+      'Authorization': 'Basic d2ViOjEyMzQ1Ng=='
+    },
+    method: 'post',
+    params: { auth_code: state + '@' + code, code }
+  })
+}

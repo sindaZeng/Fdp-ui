@@ -1,7 +1,7 @@
 /**
  * 打开小窗口
  */
-export const util = (url, title, w, h) => {
+export const openWindows = (url, title, w, h) => {
   const dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : screen.left
   const dualScreenTop = window.screenTop !== undefined ? window.screenTop : screen.top
 
