@@ -9,15 +9,15 @@ $yellow:#FEC171;
 $panGreen: #30B08F;
 
 // sidebar
-$menuText:#bfcbd9;
+$menuText:#696969;//菜单栏字体颜色
 $menuActiveText:#409EFF;
-$subMenuActiveText:#f4f4f5; // https://github.com/ElemeFE/element/issues/12951
+$subMenuActiveText:#696969; // https://github.com/ElemeFE/element/issues/12951
 
-$menuBg: #304156;
-$menuHover:#263445;
+$menuBg: #FFFFFF; //菜单栏背景
+$menuHover:#DCDCDC;//鼠标移动至一级菜单时颜色
 
-$subMenuBg:#1f2d3d;
-$subMenuHover:#001528;
+$subMenuBg:#DCDCDC;  //一级菜单 下拉打开二级菜单的颜色
+$subMenuHover:#C0C0C0; //鼠标移动至二级菜单时颜色
 
 $sideBarWidth: 210px;
 

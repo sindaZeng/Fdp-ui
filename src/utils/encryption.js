@@ -4,7 +4,9 @@ import * as CryptoJS from 'crypto-js'
  *加密处理
  */
 export const encryption = (params) => {
-  let { data, param, key } = params
+  let { data } = params
+  let key = '*4%mMZTrk'
+  let param = ['password']
   const result = JSON.parse(JSON.stringify(data))
   param.forEach(ele => {
     var data = result[ele]

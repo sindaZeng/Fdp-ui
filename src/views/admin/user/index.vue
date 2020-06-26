@@ -408,7 +408,7 @@ import {rolesList} from '@/api/role'
 import {parseTime} from '@/utils'
 import checkPermission from '@/utils/permission'
 import UploadExcelComponent from '@/components/UploadExcel/index.vue'
-import {deepClone} from '@/utils/encryption'
+import {deepClone, encryption} from '@/utils/encryption'
 
 export default {
   name: 'UserList',
@@ -687,7 +687,9 @@ export default {
     },
     createUser() {
       this.validateDataForm()
-      createUser(this.temp).then(() => {
+      createUser(encryption({
+        data: this.temp
+      })).then(() => {
         this.cancel()
         this.getList()
         this.$notify({

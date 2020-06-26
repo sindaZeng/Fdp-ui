@@ -1,33 +1,27 @@
 <template>
   <div :class="classObj" class="app-wrapper">
-    <div v-if="device==='mobile'&&sidebar.opened" class="drawer-bg" @click="handleClickOutside" />
-    <sidebar class="sidebar-container" />
+    <div v-if="device==='mobile'&&sidebar.opened" class="drawer-bg" @click="handleClickOutside"/>
+    <sidebar class="sidebar-container"/>
     <div :class="{hasTagsView:needTagsView}" class="main-container">
       <div :class="{'fixed-header':fixedHeader}">
-        <navbar />
-        <tags-view v-if="needTagsView" />
+        <navbar/>
+        <tags-view v-if="needTagsView"/>
       </div>
-      <app-main />
-      <right-panel v-if="showSettings">
-        <settings />
-      </right-panel>
+      <app-main/>
     </div>
   </div>
 </template>
 
 <script>
-import RightPanel from '@/components/RightPanel'
-import { AppMain, Navbar, Settings, Sidebar, TagsView } from './components'
+import {AppMain, Navbar, Sidebar, TagsView} from './components'
 import ResizeMixin from './mixin/ResizeHandler'
-import { mapState } from 'vuex'
+import {mapState} from 'vuex'
 
 export default {
   name: 'Layout',
   components: {
     AppMain,
     Navbar,
-    RightPanel,
-    Settings,
     Sidebar,
     TagsView
   },
@@ -51,7 +45,7 @@ export default {
   },
   methods: {
     handleClickOutside() {
-      this.$store.dispatch('app/closeSideBar', { withoutAnimation: false })
+      this.$store.dispatch('app/closeSideBar', {withoutAnimation: false})
     }
   }
 }

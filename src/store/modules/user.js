@@ -43,9 +43,7 @@ const mutations = {
 const actions = {
   login({ commit }, userInfo) {
     const user = encryption({
-      data: userInfo,
-      key: '*4%mMZTrk',
-      param: ['password']
+      data: userInfo
     })
     return new Promise((resolve, reject) => {
       login(user.username, user.password).then(response => {
