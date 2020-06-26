@@ -16,6 +16,12 @@ export function getTableInfoById(query,id) {
   })
 }
 
+export function deleteInfoById(id) {
+  return request({
+    url: 'dev/dataSource/'+id,
+    method: 'delete'
+  })
+}
 
 export function generator(id,data) {
   return request({

@@ -70,7 +70,7 @@ export default {
       capsTooltip: false,
       loading: false,
       loginForm: {
-        username: 'admin',
+        username: 'demo',
         password: '123456'
       },
       loginRules: {
@@ -102,6 +102,9 @@ export default {
       })
     },
     handleLogin() {
+      if (!this.$parent.check()){
+        return
+      }
       this.$refs.loginForm.validate(valid => {
         if (valid) {
           this.loading = true

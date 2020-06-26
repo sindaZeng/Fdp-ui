@@ -64,7 +64,9 @@
           </el-button>
           <el-button
             type="text"
-            icon="el-icon-delete" plain>
+            icon="el-icon-delete"
+            @click="deleteInfo(row)"
+            plain>
             删除
           </el-button>
         </template>
@@ -81,6 +83,7 @@ import Pagination from "@/components/Pagination/index";
 import tableParam from "@/common/tableParam";
 import {fetchList} from "@/api/dev";
 import TableInfo from './tableinfo'
+import {delRole,deleteInfoById} from "@/api/role";
 
 export default {
   name: "Datasource",
@@ -111,6 +114,18 @@ export default {
       this.tableInfoVisible = true
       this.$nextTick(() => {
         this.$refs.tableInfo.init(id)
+      })
+    },
+    deleteInfo(row){
+      this.$confirm('是否确认删除数据库名称为"' + row.name + '"的数据项?', '警告', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(function () {
+        return deleteInfoById(row.id)
+      }).then(() => {
+        this.getList()
+        this.$notify.success('删除成功')
       })
     }
   }

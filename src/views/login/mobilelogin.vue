@@ -78,6 +78,9 @@ export default {
   },
   methods: {
     handleLogin() {
+      if (!this.$parent.check()){
+        return
+      }
       this.$refs.loginForm.validate(valid => {
         if (valid) {
           this.loading = true

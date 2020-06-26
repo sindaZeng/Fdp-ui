@@ -3,7 +3,7 @@
     <div class="form-container">
       <div class="head-conatiner">
         <h4 class="select-h4">
-          <el-select v-model="tenant"
+          <el-select ref="tenantSelect" v-model="tenant"
                      class="form-select"
                      placeholder="请选择租户"
                      @change="handleTenant">
@@ -123,7 +123,18 @@ export default {
         this.tenantList = response.data.data
       })
     },
+    check() {
+      let value = this.$refs.tenantSelect.value
+      if (validatenull(value)) {
+        this.$message.error('请选择租户')
+        return false;
+      }
+      return true
+    },
     thirdHandleClick(way) {
+      if (!this.check()){
+        return
+      }
       let url
       const redirect_uri = encodeURIComponent(window.location.origin + '/#/auth-redirect')
       if (way === 'tencent') {
